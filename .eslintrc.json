@@ -40,6 +40,12 @@
         "exports": "only-multiline",
         "functions": "only-multiline"
       }
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_"
+      }
     ]
   }
 }

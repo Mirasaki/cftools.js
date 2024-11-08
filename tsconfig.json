@@ -5,6 +5,9 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "dist",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "strict": true
   },
   "include": [
     "src/**/*",
