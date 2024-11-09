@@ -86,6 +86,13 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
     return headers;
   }
 
+  /**
+   * Resolves the request options for a request depending on the current state of the client
+   * @param url The URL to request
+   * @param options The options for the request
+   * @param isAuthenticating Whether the request is for authentication or not
+   * @returns The resolved request options
+   */
   public resolveRequestOptions(
     url: string,
     options: RequestInit,
@@ -117,7 +124,28 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
    * @param options The options for the request
    * @param isAuthenticating Whether the request is for authentication or not
    * @returns The parsed JSON response from the request
-   * @throws {HTTPRequestError | InvalidMethodError | ParameterRequiredError | FailedTypeValidationError | InvalidOptionError | MaxLengthExceededError | MinLengthNotReachedError | LengthMismatchError | DuplicateEntryError | LoginRequiredError | TokenRegenerationRequiredError | BadSecretError | BadTokenError | ExpiredTokenError | NoGrantError | NotFoundError | InvalidResourceError | InvalidBucketError | RateLimitError | UnexpectedError | TimeoutError | SystemUnavailableError } Thrown if the request fails
+   * @throw {HTTPRequestError} Thrown if the request fails
+   * @throw {InvalidMethodError} Thrown if the request method is invalid
+   * @throw {ParameterRequiredError} Thrown if a required parameter is missing
+   * @throw {FailedTypeValidationError} Thrown if a supplied argument failed type validation
+   * @throw {InvalidOptionError} Thrown if a supplied option is not available for the selected route
+   * @throw {MaxLengthExceededError} Thrown if the maximum length of a parameter has been exceeded
+   * @throw {MinLengthNotReachedError} Thrown if the minimum length of a parameter has not been reached
+   * @throw {LengthMismatchError} Thrown if the length of a parameter does not match the expected length
+   * @throw {DuplicateEntryError} Thrown if a duplicate entry is detected
+   * @throw {LoginRequiredError} Thrown if the client is not authenticated
+   * @throw {TokenRegenerationRequiredError} Thrown if the authentication token needs to be regenerated
+   * @throw {BadSecretError} Thrown if the secret is invalid
+   * @throw {BadTokenError} Thrown if the token is invalid
+   * @throw {ExpiredTokenError} Thrown if the token has expired
+   * @throw {NoGrantError} Thrown if the token has no grant
+   * @throw {NotFoundError} Thrown if the requested resource was not found
+   * @throw {InvalidResourceError} Thrown if the requested resource is invalid
+   * @throw {InvalidBucketError} Thrown if the requested bucket is invalid
+   * @throw {RateLimitError} Thrown if the rate limit has been exceeded
+   * @throw {UnexpectedError} Thrown if an unexpected error occurred
+   * @throw {TimeoutError} Thrown if the request timed out
+   * @throw {SystemUnavailableError} Thrown if the system is unavailable
    */
   public async request<T>(
     url: string,

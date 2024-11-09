@@ -46,6 +46,9 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     this.resolveServerApiId = this.resolveServerApiId.bind(this);
   }
 
+  /**
+   * @returns The body required for authenticating with the CFTools API.
+   */
   public getAuthenticationBody() {
     const result = {
       application_id: this.applicationId,
@@ -88,6 +91,9 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     return headers;
   }
 
+  /**
+   * @returns Whether the authentication token has expired.
+   */
   public isExpired(): boolean {
     if (!this.expiresAt) {
       return true;
@@ -96,6 +102,9 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     return this.expiresAt.getTime() < Date.now();
   }
 
+  /**
+   * @returns Whether the authentication token should be refreshed.
+   */
   public shouldRefresh(): boolean {
     if (this.isExpired()) {
       this.logger.debug('Token is expired, refreshing');
@@ -120,11 +129,18 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     return expiresAt - now < validityBuffer;
   }
 
+  /**
+   * @returns Whether the authentication token is currently refreshing.
+   */
   public isRefreshing(): boolean {
     this.logger.debug('Checking if token is currently refreshing', this.currentlyRefreshing);
     return this.currentlyRefreshing;
   }
 
+  /**
+   * Sets the authentication token refreshing state.
+   * @param refreshing Whether the authentication token is refreshing.
+   */
   public setRefreshing(refreshing: boolean): void {
     this.logger.debug('Setting token refreshing state', refreshing);
     this.currentlyRefreshing = refreshing;
@@ -149,6 +165,14 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     };
   }
 
+  /**
+   * Refreshes the authentication token.
+   * @returns A promise that resolves when the authentication token has been refreshed.
+   * @throws {ExpiredTokenError} Thrown if the authentication token has expired.
+   * @throws {LoginRequiredError} Thrown if the client is not authenticated.
+   * @throws {MissingServerApiIdError} Thrown if the server API ID is required but missing.
+   * @throws {Error} Thrown if the authentication token could not be refreshed.
+   */
   public async performRefresh(): Promise<void> {
     if (!this.shouldRefresh()) {
       this.logger.debug('Token does not need to be refreshed');

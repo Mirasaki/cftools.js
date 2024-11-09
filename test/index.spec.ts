@@ -17,12 +17,24 @@ const logLevel: LogLevel = 'error';
 const client = getClient(logLevel);
 const serverApiId = `${process.env.CFTOOLS_SERVER_API_ID}`;
 
-// [DEV] move to env
-const gameServerId = 'bb071c0529a46cbce80aaac3f833f8336d128cec';
+const gameServerId = process.env.SERVER_ID;
+const serverIp = process.env.SERVER_IP;
+const serverPort = process.env.SERVER_PORT;
+
+if (!gameServerId) {
+  throw new Error('No server ID provided');
+}
+if (!serverIp) {
+  throw new Error('No server IP provided');
+}
+if (!serverPort) {
+  throw new Error('No server port provided');
+}
+
 const gameServer: ResolveServerIdOptions = {
   game: Game.DayZ,
-  ipv4: '185.172.175.122',
-  port: 2302,
+  ipv4: serverIp,
+  port: parseInt(serverPort, 10),
 };
 
 const banListId = `${process.env.BANLIST_ID}`;

@@ -48,6 +48,9 @@ export enum GameServerQueryError {
   CONNECTION_FAILED = 'GameServerQueryError.CONNECTION_FAILED',
 }
 
+/**
+ * Enumeration of all possible actions that can be performed on a GameLabs server.
+ */
 export enum GameLabsActionCode {
   CFCloud_TeleportPlayer = 'CFCloud_TeleportPlayer',
   CFCloud_HealPlayer = 'CFCloud_HealPlayer',
