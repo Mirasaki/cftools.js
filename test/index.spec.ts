@@ -172,10 +172,11 @@ describe('Client module', function() {
     const serverApiId = client.authProvider.serverApiId;
     it('should throw when resolving the server API ID', function() {
       delete client.authProvider.serverApiId;
-      expect(() => client.authProvider.resolveServerApiId(undefined, true)).to.throw('Server API ID is missing');
-      client.authProvider.serverApiId = serverApiId;
+      // eslint-disable-next-line max-len
+      expect(() => client.authProvider.resolveServerApiId(undefined, true)).to.throw('A server API ID is required for this action');
     });
     it('should no longer throw when resolving the server API ID', function() {
+      client.authProvider.serverApiId = serverApiId;
       expect(client.authProvider.resolveServerApiId(undefined, true)).to.equal(client.authProvider.serverApiId);
     });
   });
