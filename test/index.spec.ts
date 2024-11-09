@@ -11,11 +11,13 @@ import { LogLevel } from '../src/types/logger';
 import { BattlEyeGUID, BohemiaInteractiveUID, CFToolsId, Steam64Id } from '../src/resolvers/player-ids';
 import { CachePrefix, rootCacheKey } from '../src/classes/client';
 import { ClientGrantsResponse } from '../src/types/responses';
+import { ErrorType, HTTPRequestError, LoginRequiredError } from '../src/classes/errors';
 
-const logLevel: LogLevel = 'warn';
+const logLevel: LogLevel = 'error';
 const client = getClient(logLevel);
 const serverApiId = `${process.env.CFTOOLS_SERVER_API_ID}`;
 
+// [DEV] move to env
 const gameServerId = 'bb071c0529a46cbce80aaac3f833f8336d128cec';
 const gameServer: ResolveServerIdOptions = {
   game: Game.DayZ,
@@ -110,6 +112,33 @@ describe('Client module', function() {
     it('should clear the cache', async function() {
       await client.cacheManager.clear();
       expect(await client.cacheManager.size()).to.equal(0);
+    });
+  });
+
+  describe('Errors', () => {
+    it('should be an instance of Error', () => {
+      const error = new LoginRequiredError('Test error');
+      expect(error).to.be.instanceOf(Error);
+    });
+    it('should be an instance of HTTPRequestError', () => {
+      const error = new LoginRequiredError('Test error');
+      expect(error).to.be.instanceOf(HTTPRequestError);
+    });
+    it('should be an instance of LoginRequiredError', () => {
+      const error = new LoginRequiredError('Test error');
+      expect(error).to.be.instanceOf(LoginRequiredError);
+    });
+    it('should have a message', () => {
+      const error = new LoginRequiredError('Test error');
+      expect(error.message).to.equal('Test error');
+    });
+    it('should have a status code', () => {
+      const error = new LoginRequiredError('Test error');
+      expect(error.statusCode).to.equal(401);
+    });
+    it('should have a type', () => {
+      const error = new LoginRequiredError('Test error');
+      expect(error.type).to.equal(ErrorType.NOT_AUTHENTICATED_ERROR);
     });
   });
 
@@ -465,12 +494,11 @@ describe('Client module', function() {
       const actions = await client.gameLabsActions(serverApiId);
       expect(actions).to.be.an('array');
     });
-    // it('should fetch GameLabs entity events', async function() {
-    //   const events = await client.gameLabsEntityEvents(serverApiId);
-    //   expect(events.status).to.equal(true);
-    //   expect(events.error).to.be.undefined;
-    //   expect(events.data).to.be.an('array');
-    // });
+    xit('should fetch GameLabs entity events', async function() {
+      // Note: currently gives status code 500
+      const events = await client.gameLabsEntityEvents(serverApiId);
+      expect(events).to.be.an('array');
+    });
     it('should fetch GameLabs entity vehicles', async function() {
       const vehicles = await client.gameLabsEntityVehicles(serverApiId);
       expect(vehicles).to.be.an('array');

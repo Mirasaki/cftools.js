@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 
 import { Game } from '../types/general';
+import { InvalidServerIdError } from '../classes/errors';
 
 export type ResolveServerIdOptions = {
   /**
@@ -21,11 +22,12 @@ export type ResolveServerIdOptions = {
  * Resolves a unique server identifier based on the game, IPv4 address and port
  * @param options The options to resolve the server identifier
  * @returns The resolved server identifier
+ * @throws {InvalidServerIdError} Thrown if the server identifier is invalid
  */
 export const resolveServerId = (options: string | ResolveServerIdOptions): string => {
   if (typeof options === 'string') {
     if (!isServerId(options)) {
-      throw new Error('Invalid server identifier');
+      throw new InvalidServerIdError();
     }
     return options;
   }

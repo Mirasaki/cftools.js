@@ -3,6 +3,7 @@ import { AUTHENTICATION_TOKEN_REFRESH_INTERVAL, AUTHENTICATION_TOKEN_VALIDITY_BU
 import { userAgent } from '../resolvers/library';
 import { AuthenticationData, AuthHeaders, ClientAuthenticationData, ClientAuthentication } from '../types/auth';
 import { AbstractLogger } from '../types/logger';
+import { MissingServerApiIdError, LoginRequiredError, ExpiredTokenError } from './errors';
 
 export class Authentication implements AuthenticationData, ClientAuthenticationData {
   private client: CFToolsClient;
@@ -56,6 +57,12 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     return result;
   }
 
+  /**
+   * Returns the headers required for making requests to the CFTools API.
+   * @param isAuthenticating Whether the headers are for an authentication request.
+   * @returns The headers required for making requests to the CFTools API.
+   * @throws {LoginRequiredError} Thrown if the client is not authenticated.
+   */
   public getHeaders(isAuthenticating = false): AuthHeaders {
     if (isAuthenticating) {
       if (this.enterpriseToken?.length) {
@@ -67,7 +74,7 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     }
 
     if (!this.authenticated) {
-      throw new Error('Not authenticated');
+      throw new LoginRequiredError();
     }
 
     const headers: AuthHeaders = {
@@ -123,9 +130,14 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     this.currentlyRefreshing = refreshing;
   }
 
+  /**
+   * Returns the current authentication token.
+   * @returns The current authentication token.
+   * @throws {LoginRequiredError} Thrown if the client is not authenticated.
+   */
   public currentToken(): ClientAuthentication {
-    if (!this.authenticationToken) {
-      throw new Error('No authentication token available');
+    if (!this.authenticated || !this.authenticationToken) {
+      throw new LoginRequiredError();
     }
 
     this.logger.debug('Returning existing authentication token');
@@ -176,12 +188,23 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     return;
   }
 
+  /**
+   * Throws an error if the authentication token has expired.
+   * @throws {ExpiredTokenError} Thrown if the authentication token has expired.
+   */
   public throwExpired(): void {
     if (this.isExpired()) {
-      throw new Error('Token is expired');
+      throw new ExpiredTokenError();
     }
   }
 
+  /**
+   * Resolves the server API ID to use for an action.
+   * @param serverApiId The server API ID to use.
+   * @param require Whether the server API ID is required or not.
+   * @returns The resolved server API ID.
+   * @throws {MissingServerApiIdError} Thrown if the server API ID is required but missing.
+   */
   public resolveServerApiId(serverApiId?: string, require?: false): string | null;
   public resolveServerApiId(serverApiId?: string, require?: true): string;
   public resolveServerApiId(serverApiId?: string, require = false): string | null {
@@ -197,7 +220,7 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
   
     if (require) {
       this.logger.error('Server API ID is missing');
-      throw new Error('Server API ID is missing');
+      throw new MissingServerApiIdError();
     }
   
     this.logger.debug('Server API ID is not required and missing');

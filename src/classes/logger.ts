@@ -2,28 +2,16 @@ import { defaultLogTag } from '../resolvers/library';
 import { AbstractLogger, LogLevel } from '../types/logger';
 
 export class ConsoleLogger extends AbstractLogger implements AbstractLogger {
-  private static instance: ConsoleLogger;
-
   protected logLevel: LogLevel;
   protected logTag: string;
 
-  private constructor(
+  constructor(
     logLevel: LogLevel = 'info',
     logTag = defaultLogTag,
   ) {
     super();
     this.logLevel = logLevel;
     this.logTag = logTag;
-  }
-
-  public static getInstance(
-    logLevel: LogLevel = 'info',
-    logTag = defaultLogTag,
-  ): ConsoleLogger {
-    if (!ConsoleLogger.instance) {
-      ConsoleLogger.instance = new ConsoleLogger(logLevel, logTag);
-    }
-    return ConsoleLogger.instance;
   }
 
   public info(...args: unknown[]): void {

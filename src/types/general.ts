@@ -47,3 +47,30 @@ export enum GameServerQueryError {
    */
   CONNECTION_FAILED = 'GameServerQueryError.CONNECTION_FAILED',
 }
+
+export enum GameLabsActionCode {
+  CFCloud_TeleportPlayer = 'CFCloud_TeleportPlayer',
+  CFCloud_HealPlayer = 'CFCloud_HealPlayer',
+  CFCloud_KillPlayer = 'CFCloud_KillPlayer',
+  CFCloud_SpawnPlayerItem = 'CFCloud_SpawnPlayerItem',
+  CFCloud_StripPlayer = 'CFCloud_StripPlayer',
+  CFCloud_ExplodePlayer = 'CFCloud_ExplodePlayer',
+  CFCloud_DeleteVehicle = 'CFCloud_DeleteVehicle',
+  CFCloud_KillVehicleEngine = 'CFCloud_KillVehicleEngine',
+  CFCloud_RefuelVehicle = 'CFCloud_RefuelVehicle',
+  CFCloud_RepairVehicle = 'CFCloud_RepairVehicle',
+  CFCloud_VehicleExplode = 'CFCloud_VehicleExplode',
+  CFCloud_UnstuckVehicle = 'CFCloud_UnstuckVehicle',
+  CFCloud_WorldTime = 'CFCloud_WorldTime',
+  CFCloud_WorldWeather = 'CFCloud_WorldWeather',
+  CFCloud_WorldWeatherSunny = 'CFCloud_WorldWeatherSunny',
+  CFCloud_WorldWipeAI = 'CFCloud_WorldWipeAI',
+  CFCloud_WorldWipeVehicles = 'CFCloud_WorldWipeVehicles',
+  CFCloud_SpawnItemWorld = 'CFCloud_SpawnItemWorld',
+  CFCloud_ObjectDelete = 'CFCloud_ObjectDelete',
+  CFCloud_TerritoryFlagClear = 'CFCloud_TerritoryFlagClear',
+  WRDG_FlipTransport_GL = 'WRDG_FlipTransport_GL',
+  WRDG_PushTransport_GL = 'WRDG_PushTransport_GL',
+  LB_Gamelabs_MutePlayer = 'LB_Gamelabs_MutePlayer',
+  LB_Gamelabs_UnmutePlayer = 'LB_Gamelabs_UnmutePlayer',
+}

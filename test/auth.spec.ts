@@ -12,7 +12,7 @@ describe('Authenticating', function() {
   });
 
   it('should throw when getting auth headers', function() {
-    expect(() => client.authProvider.getHeaders()).to.throw('Not authenticated');
+    expect(() => client.authProvider.getHeaders()).to.throw('The CFTools client is not authenticated');
   });
 
   it('should be marked as needing refresh', function() {

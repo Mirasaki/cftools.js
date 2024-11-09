@@ -113,8 +113,10 @@ export type PlayerListResponse = BaseResponse & {
   sessions: PlayerSession[];
 };
 
+export type ClientPlayerSession = CamelCasedPropertiesDeep<Omit<PlayerSession, 'created_at'>> & {
+  createdAt: Date;
+};
+
 export type ClientPlayerListResponse = ClientBaseResponse<
-  (CamelCasedPropertiesDeep<Omit<PlayerSession, 'created_at'>> & {
-    createdAt: Date;
-  })[]
+  ClientPlayerSession[]
 >;

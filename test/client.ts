@@ -13,7 +13,7 @@ export const getClient = (logLevel: LogLevel) => {
     throw new Error('CFTOOLS_APPLICATION_SECRET is not defined');
   }
 
-  const logger = ConsoleLogger.getInstance(logLevel);
+  const logger = new ConsoleLogger(logLevel);
 
   return new CFToolsClient({
     applicationId: process.env.CFTOOLS_APPLICATION_ID,

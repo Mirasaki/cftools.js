@@ -1,3 +1,4 @@
+import { LibraryParsingError } from '../classes/errors';
 import {
   ClientGameLabsActionsResponse,
   ClientGameLabsEntityEventsResponse,
@@ -340,7 +341,9 @@ export const transformPlayerStatsResponse = (
   // @ts-expect-error - Untenable interface - needs to be transformed
   const responseData = resolvedPlayerId in response ? response[resolvedPlayerId] as PlayerStatisticsValues : null;
   if (!responseData) {
-    throw new Error('Player statistics not found');
+    throw new LibraryParsingError(
+      'Unresolved player statistics, please create a GitHub issue if you believe this is incorrect'
+    );
   }
 
   const castWeaponStatToNumber = (key: string, value: unknown): number => {

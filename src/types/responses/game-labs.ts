@@ -1,5 +1,9 @@
 import type { CamelCasedPropertiesDeep } from 'type-fest';
 import type { BaseResponse, ClientBaseResponse } from './base';
+import type { ClientPlayerSession } from './gsm-list';
+
+import { GameLabsActionCode } from '../general';
+import { AnyPlayerId } from '../../resolvers/player-ids';
 
 export type GameLabsActionParameter = {
   type: 'boolean' | 'float' | 'int' | 'string' | 'vector';
@@ -18,11 +22,11 @@ export type GameLabsActionParameter = {
 };
 
 export type GameLabsAction = {
-  actionCode: string;
+  actionCode: GameLabsActionCode | string;
   actionContext: string;
   actionContextFilter: string[];
   actionName: string;
-  parameters: {
+  parameters?: {
     [key: string]: GameLabsActionParameter;
   };
   referenceKey: string;
@@ -70,10 +74,10 @@ export type ClientGameLabsEntityVehiclesResponse = ClientBaseResponse<
 
 export type PostGameLabsActionOptions = {
   serverApiId?: string;
-  actionCode: string;
+  actionCode: GameLabsActionCode | string;
   actionContext: 'world' | 'player' | 'vehicle' | 'object';
   referenceKey: string | null;
-  parameters: {
+  parameters?: {
     [key: string]: {
       [key: string]: string | number | boolean;
     };
@@ -83,4 +87,62 @@ export type PostGameLabsActionOptions = {
 export type BatchPostGameLabsActionOptions = {
   serverApiId?: string;
   actions: Omit<PostGameLabsActionOptions, 'serverApiId'>[];
+};
+
+// 
+// Start Included Actions
+// 
+
+export type GameLabsActionTarget = ClientPlayerSession | string | AnyPlayerId;
+
+export type IdentifierActionOptionsNoParams = {
+  serverApiId?: string;
+  identifier: string;
+};
+
+export type TargetActionOptionsNoParams = {
+  serverApiId?: string;
+  target: GameLabsActionTarget;
+};
+
+export type TeleportPlayerOptions = TargetActionOptionsNoParams & {
+  position: [number, number, number];
+};
+
+export type SpawnItemOnPlayerOptions = TargetActionOptionsNoParams & {
+  itemClassName: string;
+  populateItem?: boolean;
+  quantity?: number;
+  stacked?: boolean;
+};
+
+export type ChangeWorldTimeOptions = {
+  serverApiId?: string;
+  hour: number;
+  minute: number;
+};
+
+export type ChangeWorldWeatherOptions = {
+  serverApiId?: string;
+  fogDensity: number;
+  overcast: number;
+  rainIntensity: number;
+  windIntensity: number;
+};
+
+export type SpawnItemOnGroundOptions = {
+  serverApiId?: string;
+  itemClassName: string;
+  populateItem?: boolean;
+  quantity?: number;
+  stacked?: boolean;
+  position: [number, number, number];
+};
+
+export type WrdgPushTransportOptions = IdentifierActionOptionsNoParams & {
+  reverse?: boolean;
+};
+
+export type LBMutePlayerOptions = TargetActionOptionsNoParams & {
+  durationInMinutes: number;
 };
