@@ -2,12 +2,9 @@ import 'dotenv/config';
 
 import { CFToolsClient } from '../src/classes/client';
 import { ConsoleLogger } from '../src/classes/logger';
+import { LogLevel } from '../src/types/logger';
 
-const logger = ConsoleLogger.getInstance();
-// @ts-expect-error - disable logging
-logger.logLevel = 'off';
-
-export const getClient = () => {
+export const getClient = (logLevel: LogLevel) => {
   if (!process.env.CFTOOLS_APPLICATION_ID) {
     throw new Error('CFTOOLS_APPLICATION_ID is not defined');
   }
@@ -16,11 +13,13 @@ export const getClient = () => {
     throw new Error('CFTOOLS_APPLICATION_SECRET is not defined');
   }
 
+  const logger = ConsoleLogger.getInstance(logLevel);
+
   return new CFToolsClient({
     applicationId: process.env.CFTOOLS_APPLICATION_ID,
     applicationSecret: process.env.CFTOOLS_APPLICATION_SECRET,
     enterpriseToken: process.env.CFTOOLS_ENTERPRISE_TOKEN,
     serverApiId: process.env.CFTOOLS_SERVER_API_ID,
     userAgent: 'CFTools API Client / Test Suite',
-  }, logger);
+  }, { logger });
 };

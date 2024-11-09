@@ -78,8 +78,6 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
       headers['X-Enterprise-Access-Token'] = this.enterpriseToken;
     }
 
-    this.logger.debug('Generated authentication headers', headers);
-
     return headers;
   }
 
@@ -130,6 +128,8 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
       throw new Error('No authentication token available');
     }
 
+    this.logger.debug('Returning existing authentication token');
+
     return {
       issuedAt: this.issuedAt,
       expiresAt: this.expiresAt,
@@ -178,7 +178,6 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
 
   public throwExpired(): void {
     if (this.isExpired()) {
-      this.logger.error('Token is expired');
       throw new Error('Token is expired');
     }
   }

@@ -1,6 +1,6 @@
 import type { CamelCasedPropertiesDeep } from 'type-fest';
 
-import type { BaseGrant, BaseGrantResource, BaseResponse } from './base';
+import type { BaseGrant, BaseGrantResource, BaseResponse, ClientBaseResponse } from './base';
 
 export type BanListGrant = BaseGrant;
 
@@ -8,7 +8,7 @@ export type ServerGrant = BaseGrant & {
   resource: BaseGrantResource & {
     gameserver_id: string;
   }
-}
+};
 
 export type GrantsResponse = BaseResponse & {
   tokens: {
@@ -25,9 +25,7 @@ export type ClientServerGrantResponse = Omit<CamelCasedPropertiesDeep<ServerGran
   createdAt: Date;
 };
 
-export type ClientGrantsResponse = BaseResponse & {
-  data: {
-    banlist: ClientBanListGrantResponse[];
-    server: ClientServerGrantResponse[];
-  }
-};
+export type ClientGrantsResponse = ClientBaseResponse<{
+  banlist: ClientBanListGrantResponse[];
+  server: ClientServerGrantResponse[];
+}>;

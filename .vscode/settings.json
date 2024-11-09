@@ -11,9 +11,11 @@
     "bcpt",
     "gamedata",
     "ipss",
+    "keyv",
     "logdip",
     "nopb",
     "novb",
+    "queuepriority",
     "rcon",
     "ucoun"
   ]

@@ -1,50 +1,189 @@
+import { isIPv4 } from 'net';
+
 import { Authentication } from './auth';
-import { API_VERSION, CFTOOLS_BASE_URL, UnitConstants } from '../constants';
+import { CacheManager } from './cache';
+import { API_VERSION, AUTHENTICATION_TOKEN_REFRESH_INTERVAL, CFTOOLS_BASE_URL, UnitConstants } from '../constants';
 import { ConsoleLogger } from './logger';
 import { RequestClient } from './requests';
 
 import type { ClientAuthenticationData, ClientAuthentication } from '../types/auth';
-import type { AbstractCFToolsClient } from '../types/client';
 import type {
   AuthenticationResponse,
+  BatchPostGameLabsActionOptions,
+  ClientGameLabsActionsResponse,
+  ClientGameLabsEntityEventsResponse,
+  ClientGameLabsEntityVehiclesResponse,
   ClientGameServerResponse,
   ClientGrantsResponse,
+  ClientLeaderboardResponse,
   ClientListBansResponse,
   ClientLookupUserResponse,
   ClientPlayerListResponse,
+  ClientPlayerStatsResponse,
+  ClientPriorityQueueResponse,
   ClientServerInfoResponse,
   ClientServerStatisticsResponse,
+  ClientWhitelistResponse,
   CreateBanOptions,
   DeleteBanOptions,
+  DeletePlayerStatsOptions,
+  DeletePriorityQueueOptions,
+  DeleteWhitelistOptions,
+  GameLabsActionsResponse,
+  GameLabsEntityEventsResponse,
+  GameLabsEntityVehiclesResponse,
   GameServerResponse,
+  GetPlayerStatsOptions,
+  GetPriorityQueueOptions,
   GetSessionByCFToolsIdOptions,
+  GetWhitelistOptions,
   GrantsResponse,
   KickOptions,
+  LeaderboardOptions,
+  LeaderboardResponse,
   ListBansOptions,
   ListBansResponse,
   LookupUserResponse,
   MessagePrivateOptions,
   MessageServerOptions,
   PlayerListResponse,
+  PlayerStatsResponse,
+  PostGameLabsActionOptions,
+  PostPriorityQueueOptions,
+  PostWhitelistOptions,
+  PriorityQueueResponse,
   RawRConCommandOptions,
   ServerInfoResponse,
-  ServerStatisticsResponse
+  ServerStatisticsResponse,
+  WhitelistResponse,
 } from '../types/responses';
 
 import { AbstractLogger } from '../types/logger';
 import { AnyPlayerId, isCFToolsId } from '../resolvers/player-ids';
 import { resolveServerId, ResolveServerIdOptions } from '../resolvers/server-id';
-import { isIPv4 } from 'net';
 
-export class CFToolsClient implements AbstractCFToolsClient {
+import {
+  transformBanListResponse,
+  transformGameLabsActionsResponse,
+  transformGameLabsEntityEventsResponse,
+  transformGameLabsEntityVehiclesResponse,
+  transformGameServerDetails, 
+  transformGrantResponse,
+  transformLeaderboardResponse,
+  transformPlayerListResponse,
+  transformPlayerStatsResponse,
+  transformPriorityQueueResponse,
+  transformServerInfoResponse,
+  transformServerStatisticsResponse,
+  transformWhitelistResponse,
+} from '../resolvers/transformers';
+
+/**
+ * CacheConfigurationEntry is a tuple that represents the cache configuration
+ * for a specific cache key. The first element is the time-to-live (TTL) in
+ * seconds, and the second element is the maximum number of items to store.
+ */
+export type CacheConfigurationEntry = [number, number];
+
+export type CacheConfiguration = {
+  appGrants: CacheConfigurationEntry;
+  gameServerDetails: CacheConfigurationEntry;
+  userLookup: CacheConfigurationEntry;
+  listBans: CacheConfigurationEntry;
+  serverInfo: CacheConfigurationEntry;
+  serverStatistics: CacheConfigurationEntry;
+  playerList: CacheConfigurationEntry;
+  gameLabsActions: CacheConfigurationEntry;
+  gameLabsEntityEvents: CacheConfigurationEntry;
+  gameLabsEntityVehicles: CacheConfigurationEntry;
+  priorityQueue: CacheConfigurationEntry;
+  whitelist: CacheConfigurationEntry;
+  leaderboard: CacheConfigurationEntry;
+  playerStats: CacheConfigurationEntry;
+};
+
+export const defaultCacheConfiguration: CacheConfiguration = {
+  appGrants: [100, 60],
+  gameServerDetails: [100, 5],
+  userLookup: [100, 60],
+  listBans: [100, 30],
+  serverInfo: [100, 30],
+  serverStatistics: [100, 30],
+  playerList: [100, 30],
+  gameLabsActions: [100, 60],
+  gameLabsEntityEvents: [100, 60],
+  gameLabsEntityVehicles: [100, 60],
+  priorityQueue: [100, 30],
+  whitelist: [100, 30],
+  leaderboard: [100, 60],
+  playerStats: [100, 60],
+};
+
+export type CachePrefix = keyof CacheConfiguration;
+
+export const rootCacheKey = 'root';
+export const cachePrefixes: CachePrefix[] = Object.keys(defaultCacheConfiguration) as CachePrefix[];
+
+export type ClientOptions = {
+  logger?: AbstractLogger;
+  cacheConfiguration?: Partial<CacheConfiguration> & {
+    enabled?: boolean;
+  }
+};
+
+export class CFToolsClient {
   public logger: AbstractLogger;
   public authProvider: Authentication;
   public requestClient: RequestClient;
+  public cacheManager: CacheManager;
+  public cacheConfiguration: CacheConfiguration = defaultCacheConfiguration;
+  public cachingEnabled = true;
 
-  constructor(clientAuth: ClientAuthenticationData, logger?: AbstractLogger) {
+  constructor(
+    clientAuth: ClientAuthenticationData,
+    options?: ClientOptions,
+  ) {
+    const { logger, cacheConfiguration } = options ?? {
+      logger: undefined,
+      cacheConfiguration: {},
+    };
     this.logger = logger ?? ConsoleLogger.getInstance();
     this.authProvider = new Authentication(this, clientAuth, this.logger.extend('Authentication'));
     this.requestClient = new RequestClient(this.authProvider, this.logger.extend('RequestClient'));
+    this.cacheManager = CacheManager.getInstance();
+    this.cachingEnabled = cacheConfiguration?.enabled ?? true;
+    delete cacheConfiguration?.enabled;
+    this.cacheConfiguration = { ...defaultCacheConfiguration, ...cacheConfiguration };
+  }
+
+  private cacheTTL(prefix: CachePrefix): number {
+    return this.cacheConfiguration[prefix][0] * UnitConstants.MS_IN_ONE_S;
+  }
+
+  private cacheMaxSize(prefix: CachePrefix): number {
+    return this.cacheConfiguration[prefix][1];
+  }
+
+  private async cacheGet<T>(prefix: CachePrefix, key: string): Promise<T | null> {
+    const resolvedKey = `${prefix}:${key}`;
+    const data = this.cachingEnabled ? await this.cacheManager.get<T>(resolvedKey) : null;
+
+    this.logger.debug('Cache get', resolvedKey, data);
+
+    return data;
+  }
+
+  private async cacheSet<T>(prefix: CachePrefix, key: string, value: T): Promise<void> {
+    if (this.cachingEnabled) {
+      const resolvedKey = `${prefix}:${key}`;
+      const ttl = this.cacheTTL(prefix);
+      const maxSize = this.cacheMaxSize(prefix);
+
+      await this.cacheManager.set<T>(resolvedKey, value, ttl);
+      await this.cacheManager.enforceMaxSizeForPrefix(prefix, maxSize);
+
+      this.logger.debug('Cache set', `${resolvedKey} (${ttl}ms, ${maxSize} max)`, value);
+    }
   }
 
   public grantURL(): string {
@@ -55,13 +194,18 @@ export class CFToolsClient implements AbstractCFToolsClient {
     return resolveServerId(options);
   }
 
+  public async resolveDynamicPlayerId(
+    options: { playerId: string | AnyPlayerId }
+  ): Promise<string> {
+    return typeof options.playerId === 'string' && isCFToolsId(options.playerId)
+      ? options.playerId
+      : (await this.lookupUser(options.playerId)).cftoolsId;
+  }
+
   public async authenticate(): Promise<ClientAuthentication> {
     if (!this.authProvider.shouldRefresh()) {
-      this.logger.debug('Authentication token is still valid, returning existing token');
       return this.authProvider.currentToken();
     }
-
-    this.logger.debug('Authentication token is expired, refreshing token');
 
     const response = await this.requestClient.post<AuthenticationResponse>(
       this.requestClient.apiUrl(API_VERSION.V1, '/auth/register'),
@@ -69,10 +213,13 @@ export class CFToolsClient implements AbstractCFToolsClient {
       true,
     );
 
-    const validForMs = response.valid_for * UnitConstants.MS_IN_ONE_S;
+    const resolvedValidFor = response.valid_for
+      ? response.valid_for * UnitConstants.MS_IN_ONE_S
+      : AUTHENTICATION_TOKEN_REFRESH_INTERVAL;
+      
     const clientResponse: ClientAuthentication = {
       issuedAt: new Date(),
-      expiresAt: new Date(Date.now() + validForMs),
+      expiresAt: new Date(Date.now() + resolvedValidFor),
       token: response.token,
     };
 
@@ -87,118 +234,99 @@ export class CFToolsClient implements AbstractCFToolsClient {
   }
 
   public async getAppGrants(): Promise<ClientGrantsResponse> {
+    const cachePrefix = 'appGrants';
+    const cachedResponse = await this.cacheGet<ClientGrantsResponse>(cachePrefix, rootCacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached app grants', cachedResponse);
+      return cachedResponse;
+    }
+
     const response = await this.requestClient.get<GrantsResponse>(
       this.requestClient.apiUrl(API_VERSION.V1, '/@app/grants'),
     );
 
-    const transformedResponse: ClientGrantsResponse = {
-      status: response.status,
-      error: response.error,
-      data: {
-        banlist: response.tokens.banlist.map((token) => ({
-          createdAt: new Date(token.created_at),
-          resource: {
-            id: token.resource.id,
-            identifier: token.resource.identifier,
-            objectId: token.resource.object_id,
-          }
-        })),
-        server: response.tokens.server.map((token) => ({
-          createdAt: new Date(token.created_at),
-          resource: {
-            id: token.resource.id,
-            identifier: token.resource.identifier,
-            objectId: token.resource.object_id,
-            gameserverId: token.resource.gameserver_id,
-          }
-        })),
-      }
-    };
+    const transformedResponse = transformGrantResponse(response);
 
-    this.logger.debug('Successfully transformed app grants', response, transformedResponse);
+    this.cacheSet(cachePrefix, rootCacheKey, transformedResponse);
+    this.logger.debug('Transformed app grants', response, transformedResponse);
 
     return transformedResponse;
   }
 
   public async gameServerDetails(options: string | ResolveServerIdOptions): Promise<ClientGameServerResponse> {
+    const cachePrefix = 'gameServerDetails';
+    const cacheKey = CacheManager.hashKeyFromObject(options);
+    const cachedResponse = await this.cacheGet<ClientGameServerResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached game server details', cachedResponse);
+      return cachedResponse;
+    }
+
     const serverId = this.resolveServerId(options);
     const response = await this.requestClient.get<GameServerResponse>(
       this.requestClient.apiUrl(API_VERSION.V1, `/gameserver/${serverId}`),
     );
 
-    const responseData = response[serverId];
-    const transformedResponse: ClientGameServerResponse = {
-      status: response.status,
-      error: response.error,
-      data: {
-        ...responseData,
-        object: {
-          error: responseData._object.error,
-          createdAt: new Date(responseData._object.created_at),
-          updatedAt: new Date(responseData._object.updated_at),
-        },
-        environment: {
-          time: responseData.environment.time,
-          timeAcceleration: responseData.environment.time_acceleration,
-          perspectives: {
-            '1Rd': responseData.environment.perspectives['1rd'],
-            '3Rd': responseData.environment.perspectives['3rd'],
-          }
-        },
-        host: {
-          address: responseData.host.address,
-          gamePort: responseData.host.game_port,
-          os: responseData.host.os,
-          queryPort: responseData.host.query_port,
-        },
-        mods: responseData.mods.map((mod) => ({
-          fileId: mod.file_id,
-          name: mod.name,
-        })),
-      }
-    };
+    const transformedResponse = transformGameServerDetails(response, serverId);
 
-    this.logger.debug('Successfully transformed game server details', response, transformedResponse);
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed game server details', response, transformedResponse);
 
     return transformedResponse;
   }
 
   public async lookupUser(id: string | AnyPlayerId): Promise<ClientLookupUserResponse> {
+    const cachePrefix = 'userLookup';
+    const cacheKey = CacheManager.hashKeyFromObject(id);
+    const cachedResponse = await this.cacheGet<ClientLookupUserResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached user lookup', cachedResponse);
+      return cachedResponse;
+    }
+
     const resolvedId = typeof id === 'string' ? id : id.getRawId();
 
     if (isCFToolsId(resolvedId)) {
       return {
-        status: true,
-        error: undefined,
-        data: {
-          cftoolsId: resolvedId,
-        }
+        cftoolsId: resolvedId,
       };
     }
 
     const response = await this.requestClient.get<LookupUserResponse>(
       this.requestClient.apiUrl(API_VERSION.V1, '/users/lookup', {
-        identifier: resolvedId
+        identifier: resolvedId,
       }),
     );
 
+    const transformedResponse: ClientLookupUserResponse = {
+      cftoolsId: response.cftools_id,
+    };
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
     this.logger.debug('Successfully looked up user', response);
 
-    return {
-      status: response.status,
-      error: response.error,
-      data: {
-        cftoolsId: response.cftools_id,
-      }
-    };
+    return transformedResponse;
   }
 
-  public async listBans({ banListId, filter = null}: ListBansOptions): Promise<ClientListBansResponse> {
+  public async listBans(options: ListBansOptions): Promise<ClientListBansResponse> {
+    const cachePrefix = 'listBans';
+    const cacheKey = CacheManager.hashKeyFromObject(options);
+    const cachedResponse = await this.cacheGet<ClientListBansResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached ban list', cachedResponse);
+      return cachedResponse;
+    }
+
+    const { banListId, filter } = options;
     const resolvedFilterId = typeof filter === 'string' ? filter : filter?.getRawId();
     const resolvedFilter = typeof resolvedFilterId === 'string'
       ? isIPv4(resolvedFilterId)
         ? resolvedFilterId
-        : (await this.lookupUser(resolvedFilterId)).data.cftoolsId
+        : (await this.lookupUser(resolvedFilterId)).cftoolsId
       : resolvedFilterId;
 
     const params = resolvedFilter ? new URLSearchParams({ filter: resolvedFilter }) : undefined;
@@ -206,22 +334,10 @@ export class CFToolsClient implements AbstractCFToolsClient {
       this.requestClient.apiUrl(API_VERSION.V1, `/banlist/${banListId}/bans`, params),
     );
 
-    const transformedResponse: ClientListBansResponse = {
-      status: response.status,
-      error: response.error,
-      data: response.entries.map((ban) => ({
-        id: ban.id,
-        reason: ban.reason,
-        expiresAt: ban.expires_at ? new Date(ban.expires_at) : null,
-        createdAt: new Date(ban.created_at),
-        updatedAt: new Date(ban.updated_at),
-        status: ban.status,
-        identifier: ban.identifier,
-        links: ban.links,
-      }))
-    };
+    const transformedResponse = transformBanListResponse(response);
 
-    this.logger.debug('Successfully transformed ban list', response, transformedResponse);
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed ban list', response, transformedResponse);
 
     return transformedResponse;
   }
@@ -229,7 +345,7 @@ export class CFToolsClient implements AbstractCFToolsClient {
   public async createBan(options: CreateBanOptions): Promise<void> {
     const resolvedIdentifier = options.format === 'ipv4'
       ? options.identifier
-      : (await this.lookupUser(options.identifier)).data.cftoolsId;
+      : (await this.lookupUser(options.identifier)).cftoolsId;
 
     const response = await this.requestClient.post(
       this.requestClient.apiUrl(API_VERSION.V1, `/banlist/${options.banListId}/bans`),
@@ -246,214 +362,91 @@ export class CFToolsClient implements AbstractCFToolsClient {
 
   public async deleteBan({ banListId, banId }: DeleteBanOptions): Promise<void> {
     const response = await this.requestClient.delete(
-      this.requestClient.apiUrl(API_VERSION.V1, `/banlist/${banListId}/bans/${banId}`),
+      this.requestClient.apiUrl(API_VERSION.V1, `/banlist/${banListId}/bans`, {
+        ban_id: banId,
+      }),
     );
 
     this.logger.debug('Successfully deleted ban', response);
   }
 
   public async serverInfo(serverApiId?: string): Promise<ClientServerInfoResponse> {
+    const cachePrefix = 'serverInfo';
+    const cacheKey = CacheManager.hashKeyFromObject(serverApiId);
+    const cachedResponse = await this.cacheGet<ClientServerInfoResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached server info', cachedResponse);
+      return cachedResponse;
+    }
+
     const resolvedServerApiId = this.authProvider.resolveServerApiId(serverApiId, true);
     const response = await this.requestClient.get<ServerInfoResponse>(
       this.requestClient.apiUrl(API_VERSION.V1, `/server/${resolvedServerApiId}/info`),
     );
 
-    const transformedResponse: ClientServerInfoResponse = {
-      status: response.status,
-      error: response.error,
-      data: {
-        links: response.links,
-        object: {
-          nickname: response.server._object.nickname,
-          resourceOwner: response.server._object.resource_owner,
-          createdAt: new Date(response.server._object.created_at),
-          updatedAt: new Date(response.server._object.updated_at),
-        },
-        connection: {
-          peerVersion: response.server.connection.peer_version,
-          prefilledCommands: response.server.connection.prefilled_commands,
-          protocolUsed: response.server.connection.protcol_used,
-          restricted: response.server.connection.restricted,
-        },
-        gameserver: {
-          link: response.server.gameserver.LINK,
-          game: response.server.gameserver.game,
-          gameIntegration: {
-            capabilities: response.server.gameserver.game_integration.capabilities,
-            pollProtocol: response.server.gameserver.game_integration.poll_protocol,
-            status: response.server.gameserver.game_integration.status,
-            updatedAt: response.server.gameserver.game_integration.updated_at
-              ? new Date(response.server.gameserver.game_integration.updated_at)
-              : null,
-            version: response.server.gameserver.game_integration.version,
-          },
-          gameserverId: response.server.gameserver.gameserver_id,
-          runtime: {
-            gametime: response.server.gameserver.runtime.gametime,
-            restartSchedule: response.server.gameserver.runtime.restart_schedule,
-            uptime: response.server.gameserver.runtime.uptime,
-          },
-        },
-        worker: {
-          clientId: response.server.worker.client_id,
-          state: response.server.worker.state,
-        }
-      }
-    };
+    const transformedResponse = transformServerInfoResponse(response);
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed server info', response, transformedResponse);
 
     return transformedResponse;
   }
 
   public async serverStatistics(serverApiId?: string): Promise<ClientServerStatisticsResponse> {
+    const cachePrefix = 'serverStatistics';
+    const cacheKey = CacheManager.hashKeyFromObject(serverApiId);
+    const cachedResponse = await this.cacheGet<ClientServerStatisticsResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached server statistics', cachedResponse);
+      return cachedResponse;
+    }
+
     const resolvedServerApiId = this.authProvider.resolveServerApiId(serverApiId, true);
     const response = await this.requestClient.get<ServerStatisticsResponse>(
       this.requestClient.apiUrl(API_VERSION.V1, `/server/${resolvedServerApiId}/statistics`),
     );
 
-    const transformedResponse: ClientServerStatisticsResponse = {
-      status: response.status,
-      error: response.error,
-      data: {
-        general: {
-          modComplexity: response.statistics.general.mod_complexity,
-          playtimeTotalSeconds: response.statistics.general.playtime_total_seconds,
-          sessionsTotal: response.statistics.general.sessions_total,
-        },
-        aggregated: {
-          playerIndividual: {
-            daily: response.statistics.aggregated.player_individual.daily,
-            monthly: response.statistics.aggregated.player_individual.monthly,
-            weekly: response.statistics.aggregated.player_individual.weekly,
-          },
-          playerInflux: {
-            daily: response.statistics.aggregated.player_influx.daily,
-            monthly: response.statistics.aggregated.player_influx.monthly,
-            weekly: response.statistics.aggregated.player_influx.weekly,
-          },
-          playerNewRetention: {
-            daily: response.statistics.aggregated.player_new_retention.daily,
-            monthly: response.statistics.aggregated.player_new_retention.monthly,
-            weekly: response.statistics.aggregated.player_new_retention.weekly,
-          },
-          playerRetention: {
-            monthly: response.statistics.aggregated.player_retention.monthly,
-            weekly: response.statistics.aggregated.player_retention.weekly,
-          },
-          playtime: {
-            daily: response.statistics.aggregated.playtime.daily,
-            monthly: response.statistics.aggregated.playtime.monthly,
-            weekly: response.statistics.aggregated.playtime.weekly,
-          },
-          sessions: {
-            daily: response.statistics.aggregated.sessions.daily,
-            monthly: response.statistics.aggregated.sessions.monthly,
-            weekly: response.statistics.aggregated.sessions.weekly,
-          },
-          topCountries: response.statistics.aggregated.top_countries,
-        }
-      }
-    };
+    const transformedResponse = transformServerStatisticsResponse(response);
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed server statistics', response, transformedResponse);
 
     return transformedResponse;
   }
 
   public async playerList(serverApiId?: string): Promise<ClientPlayerListResponse> {
+    const cachePrefix = 'playerList';
+    const cacheKey = CacheManager.hashKeyFromObject(serverApiId);
+    const cachedResponse = await this.cacheGet<ClientPlayerListResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached player list', cachedResponse);
+      return cachedResponse;
+    }
+
     const resolvedServerApiId = this.authProvider.resolveServerApiId(serverApiId, true);
     const response = await this.requestClient.get<PlayerListResponse>(
       this.requestClient.apiUrl(API_VERSION.V1, `/server/${resolvedServerApiId}/GSM/list`),
     );
 
-    const transformedResponse: ClientPlayerListResponse = {
-      status: response.status,
-      error: response.error,
-      data: response.sessions.map((session) => ({
-        id: session.id,
-        cftoolsId: session.cftools_id,
-        connection: {
-          countryCode: session.connection.country_code,
-          countryNames: {
-            de: session.connection.country_names.de,
-            en: session.connection.country_names.en,
-            es: session.connection.country_names.es,
-            fr: session.connection.country_names.fr,
-            ja: session.connection.country_names.ja,
-            ptBR: session.connection.country_names['pt-BR'],
-            ru: session.connection.country_names.ru,
-            zhCN: session.connection.country_names['zh-CN'],
-          },
-          ipv4: session.connection.ipv4,
-          malicious: session.connection.malicious,
-          provider: session.connection.provider,
-        },
-        createdAt: new Date(session.created_at),
-        gamedata: {
-          playerName: session.gamedata.player_name,
-          steam64: session.gamedata.steam64,
-        },
-        info: {
-          banCount: session.info.ban_count,
-          labels: session.info.labels,
-          radar: session.info.radar ? {
-            evaluated: session.info.radar.evaluated,
-            flags: session.info.radar.flags,
-            indicators: {
-              ar: session.info.radar.indicators.ar,
-              bcpt: session.info.radar.indicators.bcpt,
-              czr: session.info.radar.indicators.czr,
-              ipss: session.info.radar.indicators.ipss,
-              kdr: session.info.radar.indicators.kdr,
-              logdip: session.info.radar.indicators.logdip,
-              lsd: session.info.radar.indicators.lsd,
-              nopb: session.info.radar.indicators.nopb,
-              novb: session.info.radar.indicators.novb,
-              playerAge: session.info.radar.indicators.player_age,
-              playtimeDays: session.info.radar.indicators.playtime_days,
-              playtimePerSession: session.info.radar.indicators.playtime_per_session,
-              playtimeTotal: session.info.radar.indicators.playtime_total,
-              ucoun: session.info.radar.indicators.ucoun,
-            },
-            results: session.info.radar.results,
-            score: session.info.radar.score,
-          } : undefined,
-        },
-        live: {
-          loaded: session.live.loaded,
-          loadTime: session.live.load_time,
-          ping: session.live.ping,
-          position: session.live.position,
-        },
-        persona: {
-          bans: {
-            community: session.persona.bans.community,
-            economy: session.persona.bans.economy,
-            game: session.persona.bans.game,
-            lastBan: session.persona.bans.last_ban,
-            vac: session.persona.bans.vac,
-          },
-          profile: session.persona.profile,
-        },
-        stats: {
-          deaths: session.stats.deaths,
-          hits: session.stats.hits,
-          kills: session.stats.kills,
-          longestKill: session.stats.longest_kill,
-          longestShot: session.stats.longest_shot,
-          suicides: session.stats.suicides,
-        }
-      }))
-    };
+    const transformedResponse = transformPlayerListResponse(response);
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed player list', response, transformedResponse);
 
     return transformedResponse;
   }
 
   public async getSessionByPlayerId(options: GetSessionByCFToolsIdOptions): Promise<
-    ClientPlayerListResponse['data'][0] | null
+    ClientPlayerListResponse[0] | null
   > {
     const resolvedId = typeof options.playerId === 'string' || !isCFToolsId(options.playerId.getRawId())
-      ? (await this.lookupUser(options.playerId)).data.cftoolsId
+      ? (await this.lookupUser(options.playerId)).cftoolsId
       : options.playerId.getRawId();
     const response = await this.playerList(options.serverApiId);
-    const session = response.data.find((player) => player.cftoolsId === resolvedId);
+    const session = response.find((player) => player.cftoolsId === resolvedId);
 
     return session ?? null;
   }
@@ -540,5 +533,303 @@ export class CFToolsClient implements AbstractCFToolsClient {
     );
 
     this.logger.debug('Successfully sent RCon command', response);
+  }
+
+  public async gameLabsActions(serverApiId?: string): Promise<ClientGameLabsActionsResponse> {
+    const cachePrefix = 'gameLabsActions';
+    const cacheKey = CacheManager.hashKeyFromObject(serverApiId);
+    const cachedResponse = await this.cacheGet<ClientGameLabsActionsResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached GameLabs actions', cachedResponse);
+      return cachedResponse;
+    }
+
+    const resolvedServerApiId = this.authProvider.resolveServerApiId(serverApiId, true);
+    const response = await this.requestClient.get<GameLabsActionsResponse>(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${resolvedServerApiId}/GameLabs/actions`),
+    );
+
+    const transformedResponse = transformGameLabsActionsResponse(response);
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed GameLabs actions', response, transformedResponse);
+
+    return transformedResponse;
+  }
+
+  public async gameLabsEntityEvents(serverApiId?: string): Promise<ClientGameLabsEntityEventsResponse> {
+    const cachePrefix = 'gameLabsEntityEvents';
+    const cacheKey = CacheManager.hashKeyFromObject(serverApiId);
+    const cachedResponse = await this.cacheGet<ClientGameLabsEntityEventsResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached GameLabs entity events', cachedResponse);
+      return cachedResponse;
+    }
+
+    const resolvedServerApiId = this.authProvider.resolveServerApiId(serverApiId, true);
+    const response = await this.requestClient.get<GameLabsEntityEventsResponse>(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${resolvedServerApiId}/GameLabs/entities/events`),
+    );
+
+    const transformedResponse = transformGameLabsEntityEventsResponse(response);
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed GameLabs entity events', response, transformedResponse);
+
+    return transformedResponse;
+  }
+
+  public async gameLabsEntityVehicles(serverApiId?: string): Promise<ClientGameLabsEntityVehiclesResponse> {
+    const cachePrefix = 'gameLabsEntityVehicles';
+    const cacheKey = CacheManager.hashKeyFromObject(serverApiId);
+    const cachedResponse = await this.cacheGet<ClientGameLabsEntityVehiclesResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached GameLabs entity vehicles', cachedResponse);
+      return cachedResponse;
+    }
+
+    const resolvedServerApiId = this.authProvider.resolveServerApiId(serverApiId, true);
+    const response = await this.requestClient.get<GameLabsEntityVehiclesResponse>(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${resolvedServerApiId}/GameLabs/entities/vehicles`),
+    );
+
+    const transformedResponse = transformGameLabsEntityVehiclesResponse(response);
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed GameLabs entity vehicles', response, transformedResponse);
+
+    return transformedResponse;
+  }
+
+  public async postGameLabsAction(options: PostGameLabsActionOptions): Promise<void> {
+    const resolvedServerApiId = this.authProvider.resolveServerApiId(options.serverApiId, true);
+    const response = await this.requestClient.post(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${resolvedServerApiId}/GameLabs/action`),
+      {
+        actionCode: options.actionCode,
+        actionContext: options.actionContext,
+        parameters: options.parameters,
+      }
+    );
+
+    this.logger.debug('Successfully posted GameLabs action', response);
+  }
+
+  public async batchPostGameLabsAction(options: BatchPostGameLabsActionOptions): Promise<void> {
+    const resolvedServerApiId = this.authProvider.resolveServerApiId(options.serverApiId, true);
+
+    if (options.actions.length === 0) {
+      throw new Error('Batch actions must have at least one action');
+    }
+
+    if (options.actions.length > 10) {
+      throw new Error('Batch actions must be less than 10');
+    }
+
+    const response = await this.requestClient.post(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${resolvedServerApiId}/GameLabs/batch-actions`),
+      {
+        actions: options.actions,
+      }
+    );
+
+    this.logger.debug('Successfully batch posted GameLabs actions', response);
+  }
+
+  public async getPriorityQueue(options: GetPriorityQueueOptions): Promise<ClientPriorityQueueResponse> {
+    const cachePrefix = 'priorityQueue';
+    const cacheKey = CacheManager.hashKeyFromObject(options);
+    const cachedResponse = await this.cacheGet<ClientPriorityQueueResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached priority queue', cachedResponse);
+      return cachedResponse;
+    }
+
+    const resolvedOptions: Record<string, string> = {};
+
+    if (options.playerId) {
+      resolvedOptions['cftools_id'] = typeof options.playerId === 'string' && isCFToolsId(options.playerId)
+        ? options.playerId
+        : (await this.lookupUser(options.playerId)).cftoolsId;
+    }
+
+    if (options.comment) {
+      resolvedOptions['comment'] = options.comment;
+    }
+
+    const response = await this.requestClient.get<PriorityQueueResponse>(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${options.serverApiId}/queuepriority`, resolvedOptions),
+    );
+
+    const transformedResponse = transformPriorityQueueResponse(response);
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed priority queue', response, transformedResponse);
+
+    return transformedResponse;
+  }
+
+  public async postPriorityQueue(options: PostPriorityQueueOptions): Promise<void> {
+    const resolvedPlayerId = await this.resolveDynamicPlayerId(options);
+    
+    const response = await this.requestClient.post(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${options.serverApiId}/queuepriority`),
+      {
+        cftools_id: resolvedPlayerId,
+        expiresAt: options.expiresAt ? options.expiresAt.toISOString() : null,
+        comment: options.comment,
+      }
+    );
+
+    this.logger.debug('Successfully posted to priority queue', response);
+  }
+
+  public async deletePriorityQueue(options: DeletePriorityQueueOptions): Promise<void> {
+    const resolvedPlayerId = await this.resolveDynamicPlayerId(options);
+    
+    const response = await this.requestClient.delete(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${options.serverApiId}/queuepriority`, {
+        cftools_id: resolvedPlayerId,
+      }),
+    );
+
+    this.logger.debug('Successfully deleted from priority queue', response);
+  }
+
+  public async getWhitelist(options: GetWhitelistOptions): Promise<ClientWhitelistResponse> {
+    const cachePrefix = 'whitelist';
+    const cacheKey = CacheManager.hashKeyFromObject(options);
+    const cachedResponse = await this.cacheGet<ClientWhitelistResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached whitelist', cachedResponse);
+      return cachedResponse;
+    }
+
+    const resolvedOptions: Record<string, string> = {};
+
+    if (options.playerId) {
+      resolvedOptions['cftools_id'] = typeof options.playerId === 'string' && isCFToolsId(options.playerId)
+        ? options.playerId
+        : (await this.lookupUser(options.playerId)).cftoolsId;
+    }
+
+    if (options.comment) {
+      resolvedOptions['comment'] = options.comment;
+    }
+
+    const response = await this.requestClient.get<WhitelistResponse>(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${options.serverApiId}/whitelist`, resolvedOptions),
+    );
+
+    const transformedResponse = transformWhitelistResponse(response);
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed whitelist', response, transformedResponse);
+
+    return transformedResponse;
+  }
+
+  public async postWhitelist(options: PostWhitelistOptions): Promise<void> {
+    const resolvedPlayerId = await this.resolveDynamicPlayerId(options);
+    
+    const response = await this.requestClient.post(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${options.serverApiId}/whitelist`),
+      {
+        cftools_id: resolvedPlayerId,
+        expiresAt: options.expiresAt ? options.expiresAt.toISOString() : null,
+        comment: options.comment,
+      }
+    );
+
+    this.logger.debug('Successfully posted to whitelist', response);
+  }
+
+  public async deleteWhitelist(options: DeleteWhitelistOptions): Promise<void> {
+    const resolvedPlayerId = await this.resolveDynamicPlayerId(options);
+    
+    const response = await this.requestClient.delete(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${options.serverApiId}/whitelist`, {
+        cftools_id: resolvedPlayerId,
+      }),
+    );
+
+    this.logger.debug('Successfully deleted from whitelist', response);
+  }
+
+  public async leaderboard(options: LeaderboardOptions): Promise<ClientLeaderboardResponse> {
+    const cachePrefix = 'leaderboard';
+    const cacheKey = CacheManager.hashKeyFromObject(options);
+    const cachedResponse = await this.cacheGet<ClientLeaderboardResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached leaderboard', cachedResponse);
+      return cachedResponse;
+    }
+
+    const resolvedServerApiId = this.authProvider.resolveServerApiId(options.serverApiId, true);
+
+    if (options.limit < 1 || options.limit > 100) {
+      throw new Error('Leaderboard limit must be between 1 and 100');
+    }
+
+    const response = await this.requestClient.get<LeaderboardResponse>(
+      this.requestClient.apiUrl(API_VERSION.V1, `/server/${resolvedServerApiId}/leaderboard`, {
+        stat: options.stat,
+        order: options.order.toString(10),
+        limit: options.limit.toString(10),
+      }),
+    );
+
+    const transformedResponse = transformLeaderboardResponse(response);
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed leaderboard', response, transformedResponse);
+
+    return transformedResponse;
+  }
+
+  public async getPlayerStats(options: GetPlayerStatsOptions): Promise<ClientPlayerStatsResponse> {
+    const cachePrefix = 'playerStats';
+    const cacheKey = CacheManager.hashKeyFromObject(options);
+    const cachedResponse = await this.cacheGet<ClientPlayerStatsResponse>(cachePrefix, cacheKey);
+
+    if (cachedResponse) {
+      this.logger.debug('Returning cached player statistics', cachedResponse);
+      return cachedResponse;
+    }
+
+    const resolvedServerApiId = this.authProvider.resolveServerApiId(options.serverApiId, true);
+    const resolvedPlayerId = await this.resolveDynamicPlayerId(options);
+    
+    const response = await this.requestClient.get<PlayerStatsResponse>(
+      this.requestClient.apiUrl(API_VERSION.V2, `/server/${resolvedServerApiId}/player`, {
+        cftools_id: resolvedPlayerId,
+      }),
+    );
+
+    const transformedResponse = transformPlayerStatsResponse(response, resolvedPlayerId);
+
+    this.cacheSet(cachePrefix, cacheKey, transformedResponse);
+    this.logger.debug('Transformed player statistics', response, transformedResponse);
+
+    return transformedResponse;
+  }
+
+  public async resetPlayerStats(options: DeletePlayerStatsOptions): Promise<void> {
+    const resolvedServerApiId = this.authProvider.resolveServerApiId(options.serverApiId, true);
+    const resolvedPlayerId = await this.resolveDynamicPlayerId(options);
+    
+    const response = await this.requestClient.delete(
+      this.requestClient.apiUrl(API_VERSION.V2, `/server/${resolvedServerApiId}/player`, {
+        cftools_id: resolvedPlayerId,
+      }),
+    );
+
+    this.logger.debug('Successfully deleted player statistics', response);
   }
 }

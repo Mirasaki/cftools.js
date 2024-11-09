@@ -1,11 +1,12 @@
-import { CamelCasedPropertiesDeep } from 'type-fest';
-import { BaseResponse } from './base';
 import { AnyPlayerId } from '../../resolvers/player-ids';
+
+import type { BaseResponse, ClientBaseResponse } from './base';
+import type { CamelCasedPropertiesDeep } from 'type-fest';
 
 export type GetSessionByCFToolsIdOptions = {
   playerId: string | AnyPlayerId;
   serverApiId?: string;
-}
+};
 
 export type PlayerSessionConnection = {
   country_code: string;
@@ -22,12 +23,12 @@ export type PlayerSessionConnection = {
   ipv4: string;
   malicious: boolean;
   provider: string | null;
-}
+};
 
 export type PlayerSessionGameData = {
   player_name: string;
   steam64: string;
-}
+};
 
 export type PlayerSessionInfo = {
   ban_count: number;
@@ -56,7 +57,7 @@ export type PlayerSessionInfo = {
     };
     score: number;
   }
-}
+};
 
 export type PlayerSessionLive = {
   load_time: number;
@@ -70,7 +71,7 @@ export type PlayerSessionLive = {
     latest: [number, number, number];
     leave: [number, number, number] | null;
   }
-}
+};
 
 export type PlayerSessionPersona = {
   bans: {
@@ -90,11 +91,11 @@ export type PlayerSessionPersona = {
 export type PlayerSessionStats = {
   kills?: number;
   deaths?: number;
+  suicides?: number;
   hits?: number;
   longest_kill?: number;
   longest_shot?: number;
-  suicides?: number;
-}
+};
 
 export type PlayerSession = {
   cftools_id: string;
@@ -106,14 +107,14 @@ export type PlayerSession = {
   live: PlayerSessionLive;
   persona: PlayerSessionPersona;
   stats: PlayerSessionStats;
-}
+};
 
 export type PlayerListResponse = BaseResponse & {
   sessions: PlayerSession[];
-}
+};
 
-export type ClientPlayerListResponse = BaseResponse & {
-  data: (CamelCasedPropertiesDeep<Omit<PlayerSession, 'created_at'>> & {
+export type ClientPlayerListResponse = ClientBaseResponse<
+  (CamelCasedPropertiesDeep<Omit<PlayerSession, 'created_at'>> & {
     createdAt: Date;
-  })[];
-}
+  })[]
+>;

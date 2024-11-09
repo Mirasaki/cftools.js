@@ -5,11 +5,16 @@ export type BaseResponse = {
   error?: string;
 };
 
+/**
+ * Note: This type is used to track client responses in the IDE.
+ */
+export type ClientBaseResponse<T> = T;
+
 export type BaseGrantResource  = {
   id: string;
   identifier: string;
   object_id: string;
-}
+};
 
 export type BaseGrant = {
   created_at: string;

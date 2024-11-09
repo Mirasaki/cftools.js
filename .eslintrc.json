@@ -31,21 +31,33 @@
       "warn",
       120
     ],
-    "comma-dangle": [
+    "comma-dangle": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    "@typescript-eslint/semi": [
+      "error",
+      "always"
+    ],
+    "@typescript-eslint/comma-dangle": [
       "error",
       {
         "arrays": "only-multiline",
         "objects": "only-multiline",
         "imports": "only-multiline",
         "exports": "only-multiline",
-        "functions": "only-multiline"
-      }
-    ],
-    "@typescript-eslint/no-unused-vars": [
-      "error",
-      {
-        "argsIgnorePattern": "^_"
+        "functions": "only-multiline",
+        "enums": "always",
+        "generics": "never",
+        "tuples": "never"
       }
     ]
-  }
+  },
+  "ignorePatterns": [
+    "dist/",
+    "node_modules/"
+  ]
 }

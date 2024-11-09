@@ -1,5 +1,5 @@
-import { CamelCasedPropertiesDeep } from 'type-fest';
-import { BaseResponse } from './base';
+import type { BaseResponse, ClientBaseResponse } from './base';
+import type { CamelCasedPropertiesDeep } from 'type-fest';
 
 export type AggregatedStatistics = {
   daily: number[];
@@ -23,7 +23,7 @@ export type ServerStatisticsGeneral = {
   mod_complexity: number;
   playtime_total_seconds: number;
   sessions_total: number;
-}
+};
 
 export type ServerStatisticsResponse = BaseResponse & {
   statistics: {
@@ -32,6 +32,6 @@ export type ServerStatisticsResponse = BaseResponse & {
   }
 };
 
-export type ClientServerStatisticsResponse = BaseResponse & {
-  data: CamelCasedPropertiesDeep<ServerStatisticsResponse['statistics']>;
-};
+export type ClientServerStatisticsResponse = ClientBaseResponse<
+  CamelCasedPropertiesDeep<ServerStatisticsResponse['statistics']>
+>;

@@ -1,6 +1,7 @@
-import { CamelCasedPropertiesDeep } from 'type-fest';
 import { Game } from '../general';
-import { BaseResponse } from './base';
+
+import type { BaseResponse, ClientBaseResponse } from './base';
+import type { CamelCasedPropertiesDeep } from 'type-fest';
 
 export type ServerInfoLink = {
   href: string;
@@ -38,9 +39,9 @@ export type ServerInfoGameServerRuntimeRestartSchedule = {
 };
 
 export type ServerInfoGameServerRuntime = {
-  gametime: string;
-  restart_schedule: ServerInfoGameServerRuntimeRestartSchedule;
-  uptime: number;
+  gametime?: string;
+  restart_schedule?: ServerInfoGameServerRuntimeRestartSchedule;
+  uptime?: number;
 };
 
 export type ServerInfoGameServer = {
@@ -66,21 +67,19 @@ export type ServerInfoResponse = BaseResponse & {
   };
 };
 
-export type ClientServerInfoResponse = BaseResponse & {
-  data: {
-    links: CamelCasedPropertiesDeep<ServerInfoLink>[];
-    object: Omit<CamelCasedPropertiesDeep<ServerInfoObject>, 'createdAt' | 'updatedAt'> & {
-      createdAt: Date;
-      updatedAt: Date;
+export type ClientServerInfoResponse = ClientBaseResponse<{
+  links: CamelCasedPropertiesDeep<ServerInfoLink>[];
+  object: Omit<CamelCasedPropertiesDeep<ServerInfoObject>, 'createdAt' | 'updatedAt'> & {
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  connection: Omit<CamelCasedPropertiesDeep<ServerInfoConnection>, 'protcolUsed'> & {
+    protocolUsed: string;
+  };
+  gameserver: Omit<CamelCasedPropertiesDeep<ServerInfoGameServer>, 'gameIntegration'> & {
+    gameIntegration: Omit<CamelCasedPropertiesDeep<ServerInfoGameServerIntegration>, 'updatedAt'> & {
+      updatedAt: Date | null;
     };
-    connection: Omit<CamelCasedPropertiesDeep<ServerInfoConnection>, 'protcolUsed'> & {
-      protocolUsed: string;
-    };
-    gameserver: Omit<CamelCasedPropertiesDeep<ServerInfoGameServer>, 'gameIntegration'> & {
-      gameIntegration: Omit<CamelCasedPropertiesDeep<ServerInfoGameServerIntegration>, 'updatedAt'> & {
-        updatedAt: Date | null;
-      };
-    };
-    worker: CamelCasedPropertiesDeep<ServerInfoWorker>;
-  }
-};
+  };
+  worker: CamelCasedPropertiesDeep<ServerInfoWorker>;
+}>;

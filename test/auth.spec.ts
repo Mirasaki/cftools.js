@@ -1,8 +1,10 @@
 // tslint:disable: only-arrow-functions
 import { expect } from 'chai';
 import { getClient } from './client';
+import { LogLevel } from '../src/types/logger';
 
-const client = getClient();
+const logLevel: LogLevel = 'error';
+const client = getClient(logLevel);
 
 describe('Authenticating', function() {
   it('should initially be unauthenticated', function() {

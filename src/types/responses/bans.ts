@@ -1,6 +1,6 @@
 import { CamelCasedPropertiesDeep } from 'type-fest';
 
-import type { BaseResponse } from './base';
+import type { BaseResponse, ClientBaseResponse } from './base';
 import type { AnyPlayerId } from '../../resolvers/player-ids';
 
 export type CreateBanListFormat = 'cftools_id' | 'ipv4';
@@ -8,7 +8,7 @@ export type CreateBanListFormat = 'cftools_id' | 'ipv4';
 export type ListBansOptions = {
   banListId: string;
   filter?: AnyPlayerId | string | null;
-}
+};
 
 export type BaseCreateBanOptions = {
   banListId: string;
@@ -57,10 +57,10 @@ export type ListBansResponse = BaseResponse & {
   entries: BanEntry[];
 };
 
-export type ClientListBansResponse = BaseResponse & {
-  data: (Omit<CamelCasedPropertiesDeep<BanEntry>, 'createdAt' | 'updatedAt' | 'expiresAt'> & {
+export type ClientListBansResponse = ClientBaseResponse<
+  (Omit<CamelCasedPropertiesDeep<BanEntry>, 'createdAt' | 'updatedAt' | 'expiresAt'> & {
     createdAt: Date;
     updatedAt: Date;
     expiresAt: Date | null;
-  })[];
-};
+  })[]
+>;

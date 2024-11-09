@@ -15,7 +15,7 @@ export type ResolveServerIdOptions = {
    * The game-port the server is running on
    */
   port: number;
-}
+};
 
 /**
  * Resolves a unique server identifier based on the game, IPv4 address and port

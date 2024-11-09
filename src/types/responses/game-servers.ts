@@ -1,10 +1,11 @@
-import type { BaseResponse } from './base';
-import { Game } from '../general';
-import { CamelCasedPropertiesDeep } from 'type-fest';
+import { Game, GameServerQueryError } from '../general';
+
+import type { BaseResponse, ClientBaseResponse } from './base';
+import type { CamelCasedPropertiesDeep } from 'type-fest';
 
 export type GameServerObject = {
   created_at: string;
-  error: string;
+  error: GameServerQueryError;
   updated_at: string;
 };
 
@@ -21,7 +22,7 @@ export type GameServerAttributes = {
   official: boolean;
   shard: string;
   whitelist: boolean;
-}
+};
 
 export type GameServerEnvironment = {
   perspectives: {
@@ -54,7 +55,7 @@ export type GameServerHost = {
   game_port: number;
   os: string;
   query_port: number;
-}
+};
 
 export type GameServerMod = {
   file_id: string;
@@ -106,11 +107,9 @@ export type GameServerResponse = BaseResponse & {
   [key: string]: GameServer;
 };
 
-export type ClientGameServerResponse = BaseResponse & {
-  data: Omit<CamelCasedPropertiesDeep<GameServer>, 'object'> & {
-    object: Omit<CamelCasedPropertiesDeep<GameServerObject>, 'createdAt' | 'updatedAt'> & {
-      createdAt: Date;
-      updatedAt: Date;
-    };
+export type ClientGameServerResponse = ClientBaseResponse<Omit<CamelCasedPropertiesDeep<GameServer>, 'object'> & {
+  object: Omit<CamelCasedPropertiesDeep<GameServerObject>, 'createdAt' | 'updatedAt'> & {
+    createdAt: Date;
+    updatedAt: Date;
   };
-};
+}>;

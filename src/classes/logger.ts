@@ -16,9 +16,12 @@ export class ConsoleLogger extends AbstractLogger implements AbstractLogger {
     this.logTag = logTag;
   }
 
-  public static getInstance(): ConsoleLogger {
+  public static getInstance(
+    logLevel: LogLevel = 'info',
+    logTag = defaultLogTag,
+  ): ConsoleLogger {
     if (!ConsoleLogger.instance) {
-      ConsoleLogger.instance = new ConsoleLogger();
+      ConsoleLogger.instance = new ConsoleLogger(logLevel, logTag);
     }
     return ConsoleLogger.instance;
   }

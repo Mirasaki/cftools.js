@@ -4,7 +4,7 @@ import {
   ENTERPRISE_V1_API_BASE_URL,
   ENTERPRISE_V2_API_BASE_URL,
   V1_API_BASE_URL,
-  V2_API_BASE_URL
+  V2_API_BASE_URL,
 } from '../constants';
 import { AbstractLogger } from '../types/logger';
 import { AbstractRequestClient } from '../types/requests';
@@ -56,12 +56,11 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
       delete headers['Referer'];
     }
 
-    this.logger.debug('Resolved headers for request', headers);
-
     return headers;
   }
 
   public resolveRequestOptions(
+    url: string,
     options: RequestInit,
     isAuthenticating = false,
   ): RequestInit {
@@ -70,7 +69,17 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
       headers: this.resolveHeaders(options.headers ?? {}, isAuthenticating),
     };
 
-    this.logger.debug('Resolved request options', resolvedOptions);
+    this.logger.debug(`Resolved request options for ${url}`, {
+      ...resolvedOptions,
+      headers: {
+        ...resolvedOptions.headers,
+        Authorization: 'Bearer [REDACTED]',
+        'X-Enterprise-Access-Token': Object.prototype.hasOwnProperty.call(
+          resolvedOptions.headers,
+          'X-Enterprise-Access-Token'
+        ) ? '[REDACTED]' : undefined,
+      },
+    });
 
     return resolvedOptions;
   }
@@ -81,35 +90,42 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
     isAuthenticating = false,
   ): Promise<T> {
     if (this.authProvider.shouldRefresh() && !isAuthenticating) {
-      this.logger.debug('Authentication token is expired, refreshing token');
       await this.authProvider.performRefresh();
     }
 
-    this.logger.debug('Performing request', url, options);
-
-    return fetch(url, this.resolveRequestOptions(options, isAuthenticating)).then(async (response) => {
+    const method = options.method?.toLocaleUpperCase() ?? 'GET';
+    return fetch(url, this.resolveRequestOptions(url, options, isAuthenticating)).then(async (response) => {
       if (!response.ok) {
-        this.logger.error(`Request to ${url} failed`, response.statusText);
+        this.logger.error(`${method} Request to ${url} failed`, response.statusText);
         try {
-          const error = await response.json();
-          this.logger.error('Request error', error);
+          const error = await response.text();
+          this.logger.error('Request error', 'response-body', error, 'headers', response.headers);
         } catch (e) {
-          this.logger.error('Failed to parse error response', e);
+          this.logger.error('Failed to parse error response', 'error', `${e}`, 'headers', response.headers);
         }
-        throw new Error(`Request to ${url} failed: ${response.statusText}`);
+        throw new Error(`${method} Request to ${url} failed: ${response.statusText} (${response.status}) (headers ${
+          JSON.stringify(response.headers)
+        })`);
       }
 
-      this.logger.debug(`Request to ${url} successful`, response.statusText);
+      this.logger.debug(`${method} Request to ${url} successful`, response.statusText);
 
       if (response.status === 204) {
         this.logger.debug('Request was successful but returned no content, returning empty response');
-        return {
-          status: true,
-          error: undefined,
-        } as T;
+        return;
       }
 
-      return response.json();
+      let json;
+      try {
+        json = await response.json();
+      } catch (e) {
+        this.logger.error('Failed to parse response', 'error', e, 'response', response);
+        throw new Error('Failed to parse response');
+      }
+
+      this.logger.debug(`Parsed response from ${method} ${url}`, json);
+
+      return json;
     });
   }
 
