@@ -42,11 +42,17 @@ export type ClientGameLabsActionsResponse = ClientBaseResponse<CamelCasedPropert
 // Start Entity Events
 // 
 
-export type GameLabsEntityEventsResponse = BaseResponse & {
-  entities: string[];
+export type EntityEvent = {
+  className: string;
+  id: string;
+  position: [number, number];
 };
 
-export type ClientGameLabsEntityEventsResponse = ClientBaseResponse<string[]>;
+export type GameLabsEntityEventsResponse = BaseResponse & {
+  entities: EntityEvent[];
+};
+
+export type ClientGameLabsEntityEventsResponse = ClientBaseResponse<CamelCasedPropertiesDeep<EntityEvent>[]>;
 
 // 
 // Start Entity Vehicles

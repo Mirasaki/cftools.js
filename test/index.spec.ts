@@ -44,8 +44,10 @@ const steamId = `${process.env.TEST_STEAM_ID}`;
 const battleEyeGUID = `${process.env.TEST_BATTLEYE_GUID}`;
 const bohemiaInteractiveUID = `${process.env.TEST_BOHEMIA_INTERACTIVE_UID}`;
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 beforeEach(async function() {
-  await new Promise((resolve) => setTimeout(resolve, UnitConstants.MS_IN_ONE_S * 0.125));
+  await sleep(UnitConstants.MS_IN_ONE_S * 0.125);
 });
 
 describe('Client module', function() {
@@ -128,28 +130,23 @@ describe('Client module', function() {
   });
 
   describe('Errors', () => {
+    const error = new LoginRequiredError(null, 'Test error');
     it('should be an instance of Error', () => {
-      const error = new LoginRequiredError('Test error');
       expect(error).to.be.instanceOf(Error);
     });
     it('should be an instance of HTTPRequestError', () => {
-      const error = new LoginRequiredError('Test error');
       expect(error).to.be.instanceOf(HTTPRequestError);
     });
     it('should be an instance of LoginRequiredError', () => {
-      const error = new LoginRequiredError('Test error');
       expect(error).to.be.instanceOf(LoginRequiredError);
     });
     it('should have a message', () => {
-      const error = new LoginRequiredError('Test error');
-      expect(error.message).to.equal('Test error');
+      expect(error.message).to.equal('401 - Test error - null');
     });
     it('should have a status code', () => {
-      const error = new LoginRequiredError('Test error');
       expect(error.statusCode).to.equal(401);
     });
     it('should have a type', () => {
-      const error = new LoginRequiredError('Test error');
       expect(error.type).to.equal(ErrorType.NOT_AUTHENTICATED_ERROR);
     });
   });
@@ -270,6 +267,9 @@ describe('Client module', function() {
       expect(bans).to.be.an('array');
       await Promise.all(bans.map((ban) => client.deleteBan({ banListId, banId: ban.id })));
     });
+    // Note: After creating a ban, there's a delay of around 50ms for replication
+    // Source (philipp, CFTools): > That throws an internal 404 as the ban id was not found. If you create, update,
+    // > delete and then re-check the ban there is a delay of around 50ms for replication
     it('should manage bans by IP', async function() {
       await client.createBan({
         banListId,
@@ -278,6 +278,7 @@ describe('Client module', function() {
         reason: 'Test ban',
         expires: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
       });
+      await sleep(UnitConstants.MS_IN_ONE_S * 0.25);
       const bans = await client.listBans({ banListId, filter: ip });
       expect(bans).to.be.an('array');
       await client.deleteBan({ banListId, banId: bans[0].id });
@@ -291,6 +292,7 @@ describe('Client module', function() {
         reason: 'Test ban',
         expires: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
       });
+      await sleep(UnitConstants.MS_IN_ONE_S * 0.25);
       const bans = await client.listBans({ banListId, filter: cftoolsId });
       expect(bans).to.be.an('array');
       await client.deleteBan({ banListId, banId: bans[0].id });
@@ -303,6 +305,7 @@ describe('Client module', function() {
         reason: 'Test ban',
         expires: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
       });
+      await sleep(UnitConstants.MS_IN_ONE_S * 0.25);
       const bans = await client.listBans({ banListId, filter: cftoolsId });
       expect(bans).to.be.an('array');
       await client.deleteBan({ banListId, banId: bans[0].id });
@@ -315,6 +318,7 @@ describe('Client module', function() {
         reason: 'Test ban',
         expires: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
       });
+      await sleep(UnitConstants.MS_IN_ONE_S * 0.25);
       const bans = await client.listBans({ banListId, filter: steamId });
       expect(bans).to.be.an('array');
       await client.deleteBan({ banListId, banId: bans[0].id });
@@ -327,6 +331,7 @@ describe('Client module', function() {
         reason: 'Test ban',
         expires: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
       });
+      await sleep(UnitConstants.MS_IN_ONE_S * 0.25);
       const bans = await client.listBans({ banListId, filter: steamId });
       expect(bans).to.be.an('array');
       await client.deleteBan({ banListId, banId: bans[0].id });
@@ -339,6 +344,7 @@ describe('Client module', function() {
         reason: 'Test ban',
         expires: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
       });
+      await sleep(UnitConstants.MS_IN_ONE_S * 0.25);
       const bans = await client.listBans({ banListId, filter: battleEyeGUID });
       expect(bans).to.be.an('array');
       await client.deleteBan({ banListId, banId: bans[0].id });
@@ -351,6 +357,7 @@ describe('Client module', function() {
         reason: 'Test ban',
         expires: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
       });
+      await sleep(UnitConstants.MS_IN_ONE_S * 0.25);
       const bans = await client.listBans({ banListId, filter: battleEyeGUID });
       expect(bans).to.be.an('array');
       await client.deleteBan({ banListId, banId: bans[0].id });
@@ -363,6 +370,7 @@ describe('Client module', function() {
         reason: 'Test ban',
         expires: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
       });
+      await sleep(UnitConstants.MS_IN_ONE_S * 0.25);
       const bans = await client.listBans({ banListId, filter: bohemiaInteractiveUID });
       expect(bans).to.be.an('array');
       await client.deleteBan({ banListId, banId: bans[0].id });
@@ -375,6 +383,7 @@ describe('Client module', function() {
         reason: 'Test ban',
         expires: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
       });
+      await sleep(UnitConstants.MS_IN_ONE_S * 0.25);
       const bans = await client.listBans({ banListId, filter: bohemiaInteractiveUID });
       expect(bans).to.be.an('array');
       await client.deleteBan({ banListId, banId: bans[0].id });
@@ -388,6 +397,7 @@ describe('Client module', function() {
           reason: 'Test ban',
           expires: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
         });
+        await sleep(UnitConstants.MS_IN_ONE_S * 0.25);
       } catch (error) {
         expect(error).to.not.be.undefined;
       }
@@ -448,14 +458,10 @@ describe('Client module', function() {
 
   describe('Message Global', function() {
     it('should send a global message', async function() {
-      try {
-        await client.messageServer({
-          content: 'Test message',
-          serverApiId,
-        });
-      } catch (error) {
-        expect(error).to.be.undefined;
-      }
+      await client.messageServer({
+        content: 'Test message',
+        serverApiId,
+      });
     });
     it('should throw when sending a global message with content too long', async function() {
       try {
@@ -481,14 +487,10 @@ describe('Client module', function() {
 
   describe('RCon Command', function() {
     it('should send an RCon Command', async function() {
-      try {
-        await client.rconCommand({
-          command: 'status',
-          serverApiId,
-        });
-      } catch (error) {
-        expect(error).to.be.undefined;
-      }
+      await client.rconCommand({
+        command: 'status',
+        serverApiId,
+      });
     });
     it('should throw when sending an RCon Command to an invalid server', async function() {
       try {
@@ -507,30 +509,26 @@ describe('Client module', function() {
       const actions = await client.gameLabsActions(serverApiId);
       expect(actions).to.be.an('array');
     });
-    xit('should fetch GameLabs entity events', async function() {
-      // Note: currently gives status code 500
-      const events = await client.gameLabsEntityEvents(serverApiId);
-      expect(events).to.be.an('array');
-    });
+    // Note: currently gives status code 500
+    // it('should fetch GameLabs entity events', async function() {
+    //   const events = await client.gameLabsEntityEvents(serverApiId);
+    //   expect(events).to.be.an('array');
+    // });
     it('should fetch GameLabs entity vehicles', async function() {
       const vehicles = await client.gameLabsEntityVehicles(serverApiId);
       expect(vehicles).to.be.an('array');
     });
     it('should post GameLabs actions', async function() {
-      try {
-        await client.postGameLabsAction({
-          serverApiId,
-          actionCode: 'CFCloud_WorldTime',
-          actionContext: 'world',
-          referenceKey: null,
-          parameters: {
-            hour: { valueInt: 12 },
-            minute: { valueInt: 0 },
-          },
-        });
-      } catch (error) {
-        expect(error).to.be.undefined;
-      }
+      await client.postGameLabsAction({
+        serverApiId,
+        actionCode: 'CFCloud_WorldTime',
+        actionContext: 'world',
+        referenceKey: null,
+        parameters: {
+          hour: { valueInt: 12 },
+          minute: { valueInt: 0 },
+        },
+      });
     });
     it('should batch post GameLabs actions', async function() {
       await client.batchPostGameLabsAction({
@@ -630,48 +628,32 @@ describe('Client module', function() {
     });
     describe('Manage', function() {
       it('should remove a player from the priority queue by Steam ID string', async function() {
-        try {
-          await client.deletePriorityQueue({
-            playerId: steamId,
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.deletePriorityQueue({
+          playerId: steamId,
+          serverApiId,
+        });
       });
       it('should add a player to the temporary priority queue by Steam ID string', async function() {
-        try {
-          await client.postPriorityQueue({
-            playerId: cftoolsId,
-            serverApiId,
-            comment: 'Permanent priority queue for staff',
-            expiresAt: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.postPriorityQueue({
+          playerId: cftoolsId,
+          serverApiId,
+          comment: 'Permanent priority queue for staff',
+          expiresAt: new Date(Date.now() + UnitConstants.MS_IN_ONE_D),
+        });
       });
       it('should remove a player from the temporary priority queue by Steam ID object', async function() {
-        try {
-          await client.deletePriorityQueue({
-            playerId: new Steam64Id(steamId),
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.deletePriorityQueue({
+          playerId: new Steam64Id(steamId),
+          serverApiId,
+        });
       });
       it('should add a player to the permanent priority queue by BattleEye GUID object', async function() {
-        try {
-          await client.postPriorityQueue({
-            playerId: new BattlEyeGUID(battleEyeGUID),
-            serverApiId,
-            comment: 'Permanent priority queue for staff',
-            expiresAt: null,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.postPriorityQueue({
+          playerId: new BattlEyeGUID(battleEyeGUID),
+          serverApiId,
+          comment: 'Permanent priority queue for staff',
+          expiresAt: null,
+        });
       });
     });
   });
@@ -747,46 +729,30 @@ describe('Client module', function() {
     });
     describe('Manage', function() {
       it('should remove a player from the whitelist by Steam ID string', async function() {
-        try {
-          await client.deleteWhitelist({
-            playerId: steamId,
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.deleteWhitelist({
+          playerId: steamId,
+          serverApiId,
+        });
       });
       it('should add a player to the whitelist by Steam ID string', async function() {
-        try {
-          await client.postWhitelist({
-            playerId: cftoolsId,
-            serverApiId,
-            comment: 'Permanent whitelist for staff',
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.postWhitelist({
+          playerId: cftoolsId,
+          serverApiId,
+          comment: 'Permanent whitelist for staff',
+        });
       });
       it('should remove a player from the whitelist by Steam ID object', async function() {
-        try {
-          await client.deleteWhitelist({
-            playerId: new Steam64Id(steamId),
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.deleteWhitelist({
+          playerId: new Steam64Id(steamId),
+          serverApiId,
+        });
       });
       it('should add a player to the whitelist by BattleEye GUID object', async function() {
-        try {
-          await client.postWhitelist({
-            playerId: new BattlEyeGUID(battleEyeGUID),
-            serverApiId,
-            comment: 'Permanent whitelist for staff',
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.postWhitelist({
+          playerId: new BattlEyeGUID(battleEyeGUID),
+          serverApiId,
+          comment: 'Permanent whitelist for staff',
+        });
       });
     });
   });
@@ -928,84 +894,52 @@ describe('Client module', function() {
     });
     describe('Manage', function() {
       it('should reset player statistics by CFTools ID string', async function() {
-        try {
-          await client.resetPlayerStats({
-            playerId: cftoolsId,
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.resetPlayerStats({
+          playerId: cftoolsId,
+          serverApiId,
+        });
       });
       it('should reset player statistics by CFTools ID object', async function() {
-        try {
-          await client.resetPlayerStats({
-            playerId: new CFToolsId(cftoolsId),
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.resetPlayerStats({
+          playerId: new CFToolsId(cftoolsId),
+          serverApiId,
+        });
       });
       it('should reset player statistics by Steam ID string', async function() {
-        try {
-          await client.resetPlayerStats({
-            playerId: steamId,
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.resetPlayerStats({
+          playerId: steamId,
+          serverApiId,
+        });
       });
       it('should reset player statistics by Steam ID object', async function() {
-        try {
-          await client.resetPlayerStats({
-            playerId: new Steam64Id(steamId),
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.resetPlayerStats({
+          playerId: new Steam64Id(steamId),
+          serverApiId,
+        });
       });
       it('should reset player statistics by BattleEye GUID string', async function() {
-        try {
-          await client.resetPlayerStats({
-            playerId: battleEyeGUID,
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.resetPlayerStats({
+          playerId: battleEyeGUID,
+          serverApiId,
+        });
       });
       it('should reset player statistics by BattleEye GUID object', async function() {
-        try {
-          await client.resetPlayerStats({
-            playerId: new BattlEyeGUID(battleEyeGUID),
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.resetPlayerStats({
+          playerId: new BattlEyeGUID(battleEyeGUID),
+          serverApiId,
+        });
       });
       it('should reset player statistics by Bohemia Interactive UID string', async function() {
-        try {
-          await client.resetPlayerStats({
-            playerId: bohemiaInteractiveUID,
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.resetPlayerStats({
+          playerId: bohemiaInteractiveUID,
+          serverApiId,
+        });
       });
       it('should reset player statistics by Bohemia Interactive UID object', async function() {
-        try {
-          await client.resetPlayerStats({
-            playerId: new BohemiaInteractiveUID(bohemiaInteractiveUID),
-            serverApiId,
-          });
-        } catch (error) {
-          expect(error).to.be.undefined;
-        }
+        await client.resetPlayerStats({
+          playerId: new BohemiaInteractiveUID(bohemiaInteractiveUID),
+          serverApiId,
+        });
       });
       it('should throw when resetting player statistics with an invalid identifier', async function() {
         try {

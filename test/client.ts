@@ -4,7 +4,7 @@ import { CFToolsClient } from '../src/classes/client';
 import { ConsoleLogger } from '../src/classes/logger';
 import { LogLevel } from '../src/types/logger';
 
-export const getClient = (logLevel: LogLevel) => {
+export const getClient = (logLevel: LogLevel, requestTimeout = 1500) => {
   if (!process.env.CFTOOLS_APPLICATION_ID) {
     throw new Error('CFTOOLS_APPLICATION_ID is not defined');
   }
@@ -21,5 +21,5 @@ export const getClient = (logLevel: LogLevel) => {
     enterpriseToken: process.env.CFTOOLS_ENTERPRISE_TOKEN,
     serverApiId: process.env.CFTOOLS_SERVER_API_ID,
     userAgent: 'CFTools API Client / Test Suite',
-  }, { logger });
+  }, { logger, requestTimeout });
 };

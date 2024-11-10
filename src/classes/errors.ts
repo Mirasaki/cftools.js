@@ -37,12 +37,20 @@ export class LibraryParsingError extends Error {
 }
 
 /**
+ * Additional information about the error, included in API responses.
+ * If the value is `null`, that means the error originated from the client
+ * internally and *not* from the API.
+ */
+export type APIBody = null | Record<string, unknown>;
+
+/**
  * Base error class for all CFTools API errors
  */
 export class HTTPRequestError extends Error {
   public type = ErrorType.HTTP_REQUEST_ERROR;
-  constructor(public statusCode: number, msg: string) {
-    super(msg);
+  constructor(public statusCode: number, msg: string, public body: APIBody) {
+    const resolvedMessage = `${statusCode} - ${msg} - ${JSON.stringify(body)}`;
+    super(resolvedMessage);
     Object.setPrototypeOf(this, HTTPRequestError.prototype);
   }
 }
@@ -51,8 +59,8 @@ export class HTTPRequestError extends Error {
  * Thrown when an invalid HTTP method is used
  */
 export class InvalidMethodError extends HTTPRequestError {
-  constructor(msg = 'Invalid HTTP method') {
-    super(400, msg);
+  constructor(body: APIBody, msg = 'Invalid HTTP method') {
+    super(400, msg, body);
     Object.setPrototypeOf(this, InvalidMethodError.prototype);
   }
 }
@@ -61,8 +69,8 @@ export class InvalidMethodError extends HTTPRequestError {
  * Thrown when a required parameter is missing
  */
 export class ParameterRequiredError extends HTTPRequestError {
-  constructor(msg = 'A required parameter is missing') {
-    super(400, msg);
+  constructor(body: APIBody, msg = 'A required parameter is missing') {
+    super(400, msg, body);
     Object.setPrototypeOf(this, ParameterRequiredError.prototype);
   }
 }
@@ -71,8 +79,8 @@ export class ParameterRequiredError extends HTTPRequestError {
  * Thrown when a supplied argument failed type validation
  */
 export class FailedTypeValidationError extends HTTPRequestError {
-  constructor(msg = 'A supplied argument failed the type validation') {
-    super(400, msg);
+  constructor(body: APIBody, msg = 'A supplied argument failed the type validation') {
+    super(400, msg, body);
     Object.setPrototypeOf(this, FailedTypeValidationError.prototype);
   }
 }
@@ -81,8 +89,11 @@ export class FailedTypeValidationError extends HTTPRequestError {
  * Thrown when a supplied option is not available for the selected route
  */
 export class InvalidOptionError extends HTTPRequestError {
-  constructor(msg = 'One of the supplied option is not available for the selected route.') {
-    super(400, msg);
+  constructor(
+    body: APIBody,
+    msg = 'One of the supplied option is not available for the selected route.',
+  ) {
+    super(400, msg, body);
     Object.setPrototypeOf(this, InvalidOptionError.prototype);
   }
 }
@@ -91,8 +102,8 @@ export class InvalidOptionError extends HTTPRequestError {
  * Thrown when the maximum length of a parameter has been exceeded
  */
 export class MaxLengthExceededError extends HTTPRequestError {
-  constructor(msg = 'The maximum length of a parameter has been exceeded') {
-    super(400, msg);
+  constructor(body: APIBody, msg = 'The maximum length of a parameter has been exceeded') {
+    super(400, msg, body);
     Object.setPrototypeOf(this, MaxLengthExceededError.prototype);
   }
 }
@@ -101,8 +112,8 @@ export class MaxLengthExceededError extends HTTPRequestError {
  * Thrown when the minimum length of a parameter has not been reached
  */
 export class MinLengthNotReachedError extends HTTPRequestError {
-  constructor(msg = 'The minimum length of a parameter has not been reached') {
-    super(400, msg);
+  constructor(body: APIBody, msg = 'The minimum length of a parameter has not been reached') {
+    super(400, msg, body);
     Object.setPrototypeOf(this, MinLengthNotReachedError.prototype);
   }
 }
@@ -111,8 +122,8 @@ export class MinLengthNotReachedError extends HTTPRequestError {
  * Thrown when the length of a parameter does not match the required length
  */
 export class LengthMismatchError extends HTTPRequestError {
-  constructor(msg = 'The length of a parameter does not match the required length') {
-    super(400, msg);
+  constructor(body: APIBody, msg = 'The length of a parameter does not match the required length') {
+    super(400, msg, body);
     Object.setPrototypeOf(this, LengthMismatchError.prototype);
   }
 }
@@ -121,8 +132,11 @@ export class LengthMismatchError extends HTTPRequestError {
  * Thrown when attempted creation of an entity fails as the same or a similar entity already exists
  */
 export class DuplicateEntryError extends HTTPRequestError {
-  constructor(msg = 'The attempted creation of an entity failed as the same or a similar entity already exists.') {
-    super(400, msg);
+  constructor(
+    body: APIBody,
+    msg = 'The attempted creation of an entity failed as the same or a similar entity already exists.',
+  ) {
+    super(400, msg, body);
     Object.setPrototypeOf(this, DuplicateEntryError.prototype);
   }
 }
@@ -132,8 +146,8 @@ export class DuplicateEntryError extends HTTPRequestError {
  */
 export class LoginRequiredError extends HTTPRequestError {
   public type = ErrorType.NOT_AUTHENTICATED_ERROR;
-  constructor(msg = 'The CFTools client is not authenticated') {
-    super(401, msg);
+  constructor(body: APIBody, msg = 'The CFTools client is not authenticated') {
+    super(401, msg, body);
     Object.setPrototypeOf(this, LoginRequiredError.prototype);
   }
 }
@@ -142,8 +156,8 @@ export class LoginRequiredError extends HTTPRequestError {
  * Thrown when the supplied token has been invalidated and must be regenerated
  */
 export class TokenRegenerationRequiredError extends LoginRequiredError {
-  constructor(msg = 'The supplied token has been invalidated and must be regenerated.') {
-    super(msg);
+  constructor(body: APIBody, msg = 'The supplied token has been invalidated and must be regenerated.') {
+    super(body, msg);
     Object.setPrototypeOf(this, TokenRegenerationRequiredError.prototype);
   }
 }
@@ -152,8 +166,11 @@ export class TokenRegenerationRequiredError extends LoginRequiredError {
  * Thrown when the supplied secret does not match the current application secret
  */
 export class BadSecretError extends HTTPRequestError {
-  constructor(msg = 'The supplied secret does not match the current application secret.') {
-    super(403, msg);
+  constructor(
+    body: APIBody,
+    msg = 'The supplied secret does not match the current application secret.',
+  ) {
+    super(403, msg, body);
     Object.setPrototypeOf(this, BadSecretError.prototype);
   }
 }
@@ -162,8 +179,8 @@ export class BadSecretError extends HTTPRequestError {
  * Thrown when the supplied token does not match the request identity
  */
 export class BadTokenError extends HTTPRequestError {
-  constructor(msg = 'The supplied does not match the request identity.') {
-    super(403, msg);
+  constructor(body: APIBody, msg = 'The supplied does not match the request identity.') {
+    super(403, msg, body);
     Object.setPrototypeOf(this, BadTokenError.prototype);
   }
 }
@@ -172,8 +189,8 @@ export class BadTokenError extends HTTPRequestError {
  * Thrown when the supplied token has expired
  */
 export class ExpiredTokenError extends HTTPRequestError {
-  constructor(msg = 'The supplied token has expired.') {
-    super(403, msg);
+  constructor(body: APIBody, msg = 'The supplied token has expired.') {
+    super(403, msg, body);
     Object.setPrototypeOf(this, ExpiredTokenError.prototype);
   }
 }
@@ -182,8 +199,8 @@ export class ExpiredTokenError extends HTTPRequestError {
  * Thrown when the supplied API key is invalid
  */
 export class InvalidAPIKeyError extends HTTPRequestError {
-  constructor(msg = 'The supplied API key is invalid.') {
-    super(403, msg);
+  constructor(body: APIBody, msg = 'The supplied API key is invalid.') {
+    super(403, msg, body);
     Object.setPrototypeOf(this, InvalidAPIKeyError.prototype);
   }
 }
@@ -192,8 +209,11 @@ export class InvalidAPIKeyError extends HTTPRequestError {
  * Thrown when the supplied token does not have the required grant for the specified action/resource
  */
 export class NoGrantError extends HTTPRequestError {
-  constructor(msg = 'The supplied token does not have the required grant for the specified action/resource.') {
-    super(403, msg);
+  constructor(
+    body: APIBody,
+    msg = 'The supplied token does not have the required grant for the specified action/resource.',
+  ) {
+    super(403, msg, body);
     Object.setPrototypeOf(this, NoGrantError.prototype);
   }
 }
@@ -202,8 +222,8 @@ export class NoGrantError extends HTTPRequestError {
  * Thrown when the requested route did not match any known routes
  */
 export class NotFoundError extends HTTPRequestError {
-  constructor(msg = 'The requested route did not match any known routes.') {
-    super(404, msg);
+  constructor(body: APIBody, msg = 'The requested route did not match any known routes.') {
+    super(404, msg, body);
     Object.setPrototypeOf(this, NotFoundError.prototype);
   }
 }
@@ -212,8 +232,8 @@ export class NotFoundError extends HTTPRequestError {
  * Thrown when the requested resource by the supplied id could not be found
  */
 export class InvalidResourceError extends HTTPRequestError {
-  constructor(msg = 'The requested resource by the supplied id could not be found.') {
-    super(404, msg);
+  constructor(body: APIBody, msg = 'The requested resource by the supplied id could not be found.') {
+    super(404, msg, body);
     Object.setPrototypeOf(this, InvalidResourceError.prototype);
   }
 }
@@ -224,8 +244,8 @@ export class InvalidResourceError extends HTTPRequestError {
  */
 export class InvalidBucketError extends HTTPRequestError {
   // eslint-disable-next-line max-len
-  constructor(msg = 'The resource has been found, but the action could not be executed as the respective bucket was not been found or was not configured.') {
-    super(404, msg);
+  constructor(body: APIBody, msg = 'The resource has been found, but the action could not be executed as the respective bucket was not been found or was not configured.') {
+    super(404, msg, body);
     Object.setPrototypeOf(this, InvalidBucketError.prototype);
   }
 }
@@ -234,8 +254,8 @@ export class InvalidBucketError extends HTTPRequestError {
  * Thrown when you exceed the allowed rate limit for a route
  */
 export class RateLimitError extends HTTPRequestError {
-  constructor(msg = 'You have exceeded the allowed rate limit for this route.') {
-    super(429, msg);
+  constructor(body: APIBody, msg = 'You have exceeded the allowed rate limit for this route.') {
+    super(429, msg, body);
     Object.setPrototypeOf(this, RateLimitError.prototype);
   }
 }
@@ -246,8 +266,8 @@ export class RateLimitError extends HTTPRequestError {
  */
 export class UnexpectedError extends HTTPRequestError {
   // eslint-disable-next-line max-len
-  constructor(msg = 'An internal error occurred. Should this error persist, contact CFTools Cloud support with the supplied "request_id".') {
-    super(500, msg);
+  constructor(body: APIBody, msg = 'An internal error occurred. Should this error persist, contact CFTools Cloud support with the supplied "request_id".') {
+    super(500, msg, body);
     Object.setPrototypeOf(this, UnexpectedError.prototype);
   }
 }
@@ -256,8 +276,8 @@ export class UnexpectedError extends HTTPRequestError {
  * Thrown when the requested action timed out and must be retried
  */
 export class TimeoutError extends HTTPRequestError {
-  constructor(msg = 'The requested action timed out and must be retried.') {
-    super(500, msg);
+  constructor(body: APIBody, msg = 'The requested action timed out and must be retried.') {
+    super(500, msg, body);
     Object.setPrototypeOf(this, TimeoutError.prototype);
   }
 }
@@ -266,8 +286,11 @@ export class TimeoutError extends HTTPRequestError {
  * Thrown when the requested service could not be reached. You must re-attempt your request
  */
 export class SystemUnavailableError extends HTTPRequestError {
-  constructor(msg = 'The requested service could not be reached. You must re-attempt your request.') {
-    super(503, msg);
+  constructor(
+    body: APIBody,
+    msg = 'The requested service could not be reached. You must re-attempt your request.',
+  ) {
+    super(503, msg, body);
     Object.setPrototypeOf(this, SystemUnavailableError.prototype);
   }
 }

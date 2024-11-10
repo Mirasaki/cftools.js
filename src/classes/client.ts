@@ -188,6 +188,11 @@ export type ClientOptions = {
   cacheConfiguration?: Partial<CacheConfiguration> & {
     enabled?: boolean;
   }
+  /**
+   * The amount of time (in ms) that has to pass before requests are considered
+   * timed out, and aborted.
+   */
+  requestTimeout?: number;
 };
 
 /**
@@ -239,7 +244,11 @@ export class CFToolsClient {
     };
     this.logger = logger ?? new ConsoleLogger();
     this.authProvider = new Authentication(this, clientAuth, this.logger.extend('Authentication'));
-    this.requestClient = new RequestClient(this.authProvider, this.logger.extend('RequestClient'));
+    this.requestClient = new RequestClient(
+      this.authProvider,
+      this.logger.extend('RequestClient'),
+      options?.requestTimeout
+    );
     this.cacheManager = CacheManager.getInstance();
     this.cachingEnabled = cacheConfiguration?.enabled ?? true;
     delete cacheConfiguration?.enabled;
@@ -528,6 +537,8 @@ export class CFToolsClient {
       }
     );
 
+    await this.cacheManager.clearPrefixEntries('listBans');
+
     this.logger.debug('Successfully created ban', response);
   }
 
@@ -544,6 +555,8 @@ export class CFToolsClient {
         ban_id: options.banId,
       }),
     );
+
+    await this.cacheManager.clearPrefixEntries('listBans');
 
     this.logger.debug('Successfully deleted ban', response);
   }
@@ -687,11 +700,11 @@ export class CFToolsClient {
       }))?.id;
 
     if (!resolvedSessionId) {
-      throw new NotFoundError('Player session not found');
+      throw new NotFoundError(null, 'Player session not found');
     }
 
     if (options.reason.length > 128) {
-      throw new MaxLengthExceededError('Kick reason must be less than 128 characters');
+      throw new MaxLengthExceededError(null, 'Kick reason must be less than 128 characters');
     }
 
     const response = await this.requestClient.post(
@@ -724,11 +737,11 @@ export class CFToolsClient {
       }))?.id;
 
     if (!resolvedSessionId) {
-      throw new NotFoundError('Player session not found');
+      throw new NotFoundError(null, 'Player session not found');
     }
 
     if (options.content.length > 256) {
-      throw new MaxLengthExceededError('Private message content must be less than 256 characters');
+      throw new MaxLengthExceededError(null, 'Private message content must be less than 256 characters');
     }
 
     const response = await this.requestClient.post(
@@ -750,7 +763,7 @@ export class CFToolsClient {
    */
   public async messageServer(options: MessageServerOptions): Promise<void> {
     if (options.content.length > 256) {
-      throw new MaxLengthExceededError('Server message content must be less than 256 characters');
+      throw new MaxLengthExceededError(null, 'Server message content must be less than 256 characters');
     }
 
     const response = await this.requestClient.post(
@@ -772,7 +785,7 @@ export class CFToolsClient {
    */
   public async rconCommand(options: RawRConCommandOptions): Promise<void> {
     if (options.command.length > 256) {
-      throw new MaxLengthExceededError('RCon command must be less than 256 characters');
+      throw new MaxLengthExceededError(null, 'RCon command must be less than 256 characters');
     }
 
     const response = await this.requestClient.post(
@@ -921,11 +934,11 @@ export class CFToolsClient {
     const resolvedServerApiId = this.authProvider.resolveServerApiId(options.serverApiId, true);
 
     if (options.actions.length === 0) {
-      throw new MinLengthNotReachedError('Batch actions must have at least one action');
+      throw new MinLengthNotReachedError(null, 'Batch actions must have at least one action');
     }
 
     if (options.actions.length > 10) {
-      throw new MaxLengthExceededError('Batch actions must be less than 10');
+      throw new MaxLengthExceededError(null, 'Batch actions must be less than 10');
     }
 
     const response = await this.requestClient.post(
@@ -959,7 +972,7 @@ export class CFToolsClient {
     const steam64 = await this.resolvePlayerReferenceKey(options);
 
     if (!steam64) {
-      throw new NotFoundError('Player session not found');
+      throw new NotFoundError(null, 'Player session not found');
     }
 
     const response = await this.postGameLabsAction({
@@ -998,7 +1011,7 @@ export class CFToolsClient {
     const steam64 = await this.resolvePlayerReferenceKey(options);
 
     if (!steam64) {
-      throw new NotFoundError('Player session not found');
+      throw new NotFoundError(null, 'Player session not found');
     }
 
     const response = await this.postGameLabsAction({
@@ -1029,7 +1042,7 @@ export class CFToolsClient {
     const steam64 = await this.resolvePlayerReferenceKey(options);
 
     if (!steam64) {
-      throw new NotFoundError('Player session not found');
+      throw new NotFoundError(null, 'Player session not found');
     }
 
     const response = await this.postGameLabsAction({
@@ -1065,7 +1078,7 @@ export class CFToolsClient {
     const steam64 = await this.resolvePlayerReferenceKey(options);
 
     if (!steam64) {
-      throw new NotFoundError('Player session not found');
+      throw new NotFoundError(null, 'Player session not found');
     }
 
     const response = await this.postGameLabsAction({
@@ -1114,7 +1127,7 @@ export class CFToolsClient {
     const steam64 = await this.resolvePlayerReferenceKey(options);
 
     if (!steam64) {
-      throw new NotFoundError('Player session not found');
+      throw new NotFoundError(null, 'Player session not found');
     }
 
     const response = await this.postGameLabsAction({
@@ -1145,7 +1158,7 @@ export class CFToolsClient {
     const steam64 = await this.resolvePlayerReferenceKey(options);
 
     if (!steam64) {
-      throw new NotFoundError('Player session not found');
+      throw new NotFoundError(null, 'Player session not found');
     }
 
     const response = await this.postGameLabsAction({
@@ -1321,11 +1334,11 @@ export class CFToolsClient {
     const resolvedServerApiId = this.authProvider.resolveServerApiId(options.serverApiId, true);
 
     if (options.hour < 0 || options.hour > 24) {
-      throw new LengthMismatchError('World time hour must be between 0 and 24');
+      throw new LengthMismatchError(null, 'World time hour must be between 0 and 24');
     }
 
     if (options.minute < 0 || options.minute > 60) {
-      throw new LengthMismatchError('World time minute must be between 0 and 60');
+      throw new LengthMismatchError(null, 'World time minute must be between 0 and 60');
     }
 
     const response = await this.postGameLabsAction({
@@ -1366,19 +1379,19 @@ export class CFToolsClient {
     const resolvedServerApiId = this.authProvider.resolveServerApiId(options.serverApiId, true);
 
     if (options.fogDensity < 0 || options.fogDensity > 1) {
-      throw new InvalidOptionError('World weather fog density must be between 0 and 1');
+      throw new InvalidOptionError(null, 'World weather fog density must be between 0 and 1');
     }
 
     if (options.overcast < 0 || options.overcast > 1) {
-      throw new InvalidOptionError('World weather overcast must be between 0 and 1');
+      throw new InvalidOptionError(null, 'World weather overcast must be between 0 and 1');
     }
 
     if (options.rainIntensity < 0 || options.rainIntensity > 1) {
-      throw new InvalidOptionError('World weather rain intensity must be between 0 and 1');
+      throw new InvalidOptionError(null, 'World weather rain intensity must be between 0 and 1');
     }
 
     if (options.windIntensity < 0) {
-      throw new InvalidOptionError('World weather wind intensity must be greater than 0');
+      throw new InvalidOptionError(null, 'World weather wind intensity must be greater than 0');
     }
 
     const response = await this.postGameLabsAction({
@@ -1492,7 +1505,7 @@ export class CFToolsClient {
     const resolvedServerApiId = this.authProvider.resolveServerApiId(options.serverApiId, true);
 
     if (options.position.length !== 3) {
-      throw new LengthMismatchError('Item spawn position must be an array of 3 numbers');
+      throw new LengthMismatchError(null, 'Item spawn position must be an array of 3 numbers');
     }
 
     const response = await this.postGameLabsAction({
@@ -1664,7 +1677,7 @@ export class CFToolsClient {
     const steam64 = await this.resolvePlayerReferenceKey(options);
 
     if (!steam64) {
-      throw new NotFoundError('Player session not found');
+      throw new NotFoundError(null, 'Player session not found');
     }
 
     const response = await this.postGameLabsAction({
@@ -1705,7 +1718,7 @@ export class CFToolsClient {
     const steam64 = await this.resolvePlayerReferenceKey(options);
 
     if (!steam64) {
-      throw new NotFoundError('Player session not found');
+      throw new NotFoundError(null, 'Player session not found');
     }
 
     const response = await this.postGameLabsAction({
@@ -1792,7 +1805,7 @@ export class CFToolsClient {
     });
 
     if (currentPriorityQueue.length > 0) {
-      throw new DuplicateEntryError('Player is already in the priority queue');
+      throw new DuplicateEntryError(null, 'Player is already in the priority queue');
     }
     
     const response = await this.requestClient.post(
@@ -1803,6 +1816,8 @@ export class CFToolsClient {
         comment: options.comment,
       }
     );
+
+    await this.cacheManager.clearPrefixEntries('priorityQueue');
 
     this.logger.debug('Successfully posted to priority queue', response);
   }
@@ -1828,6 +1843,8 @@ export class CFToolsClient {
         cftools_id: resolvedPlayerId,
       }),
     );
+
+    await this.cacheManager.clearPrefixEntries('priorityQueue');
 
     this.logger.debug('Successfully deleted from priority queue', response);
   }
@@ -1906,7 +1923,7 @@ export class CFToolsClient {
     });
 
     if (currentWhitelist.length > 0) {
-      throw new DuplicateEntryError('Player is already in the whitelist');
+      throw new DuplicateEntryError(null, 'Player is already in the whitelist');
     }
     
     const response = await this.requestClient.post(
@@ -1917,6 +1934,8 @@ export class CFToolsClient {
         comment: options.comment,
       }
     );
+
+    await this.cacheManager.clearPrefixEntries('whitelist');
 
     this.logger.debug('Successfully posted to whitelist', response);
   }
@@ -1942,6 +1961,8 @@ export class CFToolsClient {
         cftools_id: resolvedPlayerId,
       }),
     );
+
+    await this.cacheManager.clearPrefixEntries('whitelist');
 
     this.logger.debug('Successfully deleted from whitelist', response);
   }
@@ -1970,7 +1991,7 @@ export class CFToolsClient {
     const resolvedServerApiId = this.authProvider.resolveServerApiId(options.serverApiId, true);
 
     if (options.limit < 1 || options.limit > 100) {
-      throw new LengthMismatchError('Leaderboard limit must be between 1 and 100');
+      throw new LengthMismatchError(null, 'Leaderboard limit must be between 1 and 100');
     }
 
     const response = await this.requestClient.get<LeaderboardResponse>(
@@ -2039,6 +2060,8 @@ export class CFToolsClient {
         cftools_id: resolvedPlayerId,
       }),
     );
+
+    await this.cacheManager.clearPrefixEntries('playerStats');
 
     this.logger.debug('Successfully deleted player statistics', response);
   }

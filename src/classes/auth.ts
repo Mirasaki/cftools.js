@@ -77,7 +77,7 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     }
 
     if (!this.authenticated) {
-      throw new LoginRequiredError();
+      throw new LoginRequiredError(null);
     }
 
     const headers: AuthHeaders = {
@@ -153,7 +153,7 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
    */
   public currentToken(): ClientAuthentication {
     if (!this.authenticated || !this.authenticationToken) {
-      throw new LoginRequiredError();
+      throw new LoginRequiredError(null);
     }
 
     this.logger.debug('Returning existing authentication token');
@@ -218,7 +218,7 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
    */
   public throwExpired(): void {
     if (this.isExpired()) {
-      throw new ExpiredTokenError();
+      throw new ExpiredTokenError(null);
     }
   }
 

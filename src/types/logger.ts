@@ -36,7 +36,7 @@ export abstract class AbstractLogger {
   }
 
   protected formatMessage(level: LogLevel, ...args: unknown[]): string {
-    return `[${this.logTag}] ${level.toUpperCase()} - ${JSON.stringify(args)}`;
+    return `${new Date().toISOString()} [${this.logTag}] ${level.toUpperCase()} - ${JSON.stringify(args)}`;
   }
 
   public extend(logTag: string): AbstractLogger {

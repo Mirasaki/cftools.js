@@ -106,4 +106,13 @@ export class CacheManager {
       await Promise.all(keysToDelete.map((key) => this.del(key)));
     }
   }
+
+  /**
+   * Clears all entries that match the given prefix
+   * @param prefix The prefix to use for filtering keys
+   */
+  public async clearPrefixEntries(prefix: string): Promise<void> {
+    const keys = await this.keysForPrefix(prefix);
+    await Promise.all(keys.map((key) => this.del(key)));
+  }
 }

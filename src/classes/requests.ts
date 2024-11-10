@@ -40,6 +40,7 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
   constructor(
     private authProvider: Authentication,
     private logger: AbstractLogger,
+    public timeout = 10000,
   ) {
     super();
     this.apiUrl = this.apiUrl.bind(this);
@@ -98,9 +99,10 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
     options: RequestInit,
     isAuthenticating = false,
   ): RequestInit {
-    const resolvedOptions = {
+    const resolvedOptions: RequestInit = {
       ...options,
       headers: this.resolveHeaders(options.headers ?? {}, isAuthenticating),
+      signal: AbortSignal.timeout(this.timeout),
     };
 
     this.logger.debug(`Resolved request options for ${url}`, {
@@ -156,31 +158,47 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
       await this.authProvider.performRefresh();
     }
 
+    let response: Response;
     const method = options.method?.toLocaleUpperCase() ?? 'GET';
-    return fetch(url, this.resolveRequestOptions(url, options, isAuthenticating)).then(async (response) => {
-      if (!response.ok) {
-        await this.errorHandler(response);
+
+    try {
+      response = await fetch(url, this.resolveRequestOptions(url, options, isAuthenticating));
+    } catch (e) {
+      this.logger.error('Request failed', 'error', `${e}`);
+
+      if (e instanceof Error && e.name === 'AbortError') {
+        throw new TimeoutError({ status: 408, body: { error: '[abort] Request timed out' } });
       }
 
-      this.logger.debug(`${method} Request to ${url} successful`, response.statusText);
-
-      if (response.status === 204) {
-        this.logger.debug('Request was successful but returned no content, returning empty response');
-        return;
+      if (e instanceof Error && e.name === 'TimeoutError') {
+        throw new TimeoutError({ status: 408, body: { error: 'Request timed out' } });
       }
 
-      let json;
-      try {
-        json = await response.json();
-      } catch (e) {
-        this.logger.error('Failed to parse response', 'error', `${e}`, 'response', response);
-        throw new LibraryParsingError('Failed to parse response, create a GitHub issue with the response body');
-      }
+      throw new HTTPRequestError(0, 'Request failed', { error: `${e}` });
+    }
 
-      this.logger.debug(`Parsed response from ${method} ${url}`, json);
+    if (!response.ok) {
+      await this.errorHandler({ url, method }, response);
+    }
 
-      return json;
-    });
+    this.logger.debug(`${method} Request to ${url} successful`, response.statusText);
+
+    if (response.status === 204) {
+      this.logger.debug('Request was successful but returned no content, returning empty response');
+      return undefined as unknown as T;
+    }
+
+    let json;
+    try {
+      json = await response.json();
+    } catch (e) {
+      this.logger.error('Failed to parse response', 'error', `${e}`, 'response', response);
+      throw new LibraryParsingError('Failed to parse response, create a GitHub issue with the response body');
+    }
+
+    this.logger.debug(`Parsed response from ${method} ${url}`, json);
+
+    return json;
   }
 
   public async get<T>(url: string, isAuthenticating = false): Promise<T> {
@@ -199,97 +217,104 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
     return this.request(url, { method: 'DELETE' }, isAuthenticating);
   }
 
-  private async errorHandler(response: Response): Promise<void> {
+  private async errorHandler(request: {
+    url: string;
+    method: string;
+  }, response: Response): Promise<void> {
     this.logger.error('Request failed', response.statusText);
 
-    let errorBody;
+    let body;
     try {
-      errorBody = await response.json();
-      this.logger.error('Request error', 'response-body', JSON.stringify(errorBody), 'headers', response.headers);
+      body = await response.json();
+      this.logger.error('Request error', 'response-body', JSON.stringify(body), 'headers', response.headers);
     } catch (e) {
       this.logger.error('Failed to parse error response', 'error', `${e}`, 'headers', response.headers);
     }
 
     const status: number = response.status;
-    const safeError: string | null = typeof errorBody === 'object' && errorBody
-      && 'error' in errorBody && typeof errorBody.error === 'string'
-      ? errorBody.error
+    const safeError: string | null = typeof body === 'object' && body
+      && 'error' in body && typeof body.error === 'string'
+      ? body.error
       : null;
+
+    const errorBody = {
+      statusCode: status,
+      url: request.url,
+      method: request.method,
+      body: body,
+      headers: response.headers,
+    };
 
     switch (status) {
     case 400: {
       switch (safeError) {
       case 'invalid-method':
-        throw new InvalidMethodError();
+        throw new InvalidMethodError(errorBody);
       case 'parameter-required':
-        throw new ParameterRequiredError();
+        throw new ParameterRequiredError(errorBody);
       case 'failed-type-validation':
-        throw new FailedTypeValidationError();
+        throw new FailedTypeValidationError(errorBody);
       case 'invalid-option':
-        throw new InvalidOptionError();
+        throw new InvalidOptionError(errorBody);
       case 'max-length-exceeded':
-        throw new MaxLengthExceededError();
+        throw new MaxLengthExceededError(errorBody);
       case 'min-length-too-small':
-        throw new MinLengthNotReachedError();
+        throw new MinLengthNotReachedError(errorBody);
       case 'length-missmatch':
-        throw new LengthMismatchError();
+        throw new LengthMismatchError(errorBody);
       case 'duplicate':
-        throw new DuplicateEntryError();
+        throw new DuplicateEntryError(errorBody);
       }
       break;
     }
     case 401: {
       if (safeError === 'login-required') {
-        throw new LoginRequiredError();
+        throw new LoginRequiredError(errorBody);
       }
       break;
     }
     case 403: {
       switch (safeError) {
       case 'token-regeneration-required':
-        throw new TokenRegenerationRequiredError();
+        throw new TokenRegenerationRequiredError(errorBody);
       case 'bad-secret':
-        throw new BadSecretError();
+        throw new BadSecretError(errorBody);
       case 'bad-token':
-        throw new BadTokenError();
+        throw new BadTokenError(errorBody);
       case 'expired-token':
-        throw new ExpiredTokenError();
+        throw new ExpiredTokenError(errorBody);
       case 'no-grant':
-        throw new NoGrantError();
+        throw new NoGrantError(errorBody);
       }
       break;
     }
     case 404: {
       switch (safeError) {
       case 'not-found':
-        throw new NotFoundError();
+        throw new NotFoundError(errorBody, 'The requested resource was not found');
       case 'invalid-resource':
-        throw new InvalidResourceError();
+        throw new InvalidResourceError(errorBody);
       case 'invalid-bucket':
-        throw new InvalidBucketError();
+        throw new InvalidBucketError(errorBody);
       }
       break;
     }
     case 429: {
-      throw new RateLimitError();
+      throw new RateLimitError(errorBody);
     }
     case 500: {
       switch (safeError) {
       case 'unexpected':
-        throw new UnexpectedError();
+        throw new UnexpectedError(errorBody);
       case 'timeout':
-        throw new TimeoutError();
+        throw new TimeoutError(errorBody);
       case 'system-unavailable':
-        throw new SystemUnavailableError();
+        throw new SystemUnavailableError(errorBody);
       }
       break;
     }
     }
 
-    throw new HTTPRequestError(status, `Request failed: ${response.statusText} (${response.status}) ${
-      JSON.stringify(errorBody)
-    } (headers ${
-      JSON.stringify(response.headers)
-    })`);
+    throw new HTTPRequestError(status, `Request failed: ${response.statusText} (${response.status})`, errorBody);
   }
 }
