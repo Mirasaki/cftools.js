@@ -570,7 +570,7 @@ export class CFToolsClient {
       {
         format: options.format,
         identifier: resolvedIdentifier,
-        expiresAt: options.expires === 'PERMANENT' ? 'PERMANENT' : options.expires.toISOString(),
+        expires_at: options.expires === 'PERMANENT' ? 'PERMANENT' : options.expires.toISOString(),
         reason: options.reason,
       }
     );
@@ -1850,7 +1850,7 @@ export class CFToolsClient {
       this.requestClient.apiUrl(API_VERSION.V1, `/server/${options.serverApiId}/queuepriority`),
       {
         cftools_id: resolvedPlayerId,
-        expiresAt: options.expiresAt ? options.expiresAt.toISOString() : null,
+        expires_at: options.expiresAt ? options.expiresAt.toISOString() : null,
         comment: options.comment,
       }
     );
@@ -1968,7 +1968,7 @@ export class CFToolsClient {
       this.requestClient.apiUrl(API_VERSION.V1, `/server/${options.serverApiId}/whitelist`),
       {
         cftools_id: resolvedPlayerId,
-        expiresAt: options.expiresAt ? options.expiresAt.toISOString() : null,
+        expires_at: options.expiresAt ? options.expiresAt.toISOString() : null,
         comment: options.comment,
       }
     );
