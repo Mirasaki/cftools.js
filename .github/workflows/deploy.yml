@@ -59,8 +59,6 @@ jobs:
           npm install
           echo "Building the project's documentation..."
           npm run build:docs
-          echo "Applying local changes from stash..."
-          git stash pop
           exit
         ENDSSH
         
