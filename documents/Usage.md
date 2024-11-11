@@ -15,6 +15,8 @@ const client = new CFToolsClient({
 });
 ```
 
+For a complete overview of what the client can do, please check out the [API reference](https://cftools.mirasaki.dev/classes/classes_client.CFToolsClient.html).
+
 ## Usage example
 
 The following example wraps around updating a priority queue entry. This serves as an complete example on how this library and it's client are used, including error handling.

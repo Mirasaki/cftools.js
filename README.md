@@ -34,7 +34,8 @@ const client = new CFToolsClient({
 This library provides rich comments and IntelliSense for API calls implemented in this interface, we also provide detailed guides and documentation to get you started quickly.
 
 - For a complete example, check out [the usage guide](./documents/Usage.md).
-- For the complete API reference/documentation, please check out [the docs](https://cftools.mirasaki.dev/).
+- For the complete API documentation, please check out [the docs](https://cftools.mirasaki.dev/).
+- For a complete overview of what the client can do, please check out the [API reference](https://cftools.mirasaki.dev/classes/classes_client.CFToolsClient.html).
 
 ## Contribution
 
