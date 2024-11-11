@@ -219,10 +219,10 @@ export class NoGrantError extends HTTPRequestError {
 }
 
 /**
- * Thrown when the requested route did not match any known routes
+ * Thrown when the requested route or resource did not match any known entries
  */
 export class NotFoundError extends HTTPRequestError {
-  constructor(body: APIBody, msg = 'The requested route did not match any known routes.') {
+  constructor(body: APIBody, msg = 'The requested route or resource did not match any known entries.') {
     super(404, msg, body);
     Object.setPrototypeOf(this, NotFoundError.prototype);
   }

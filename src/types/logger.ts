@@ -16,7 +16,7 @@ export abstract class AbstractLogger {
     trace: 5,
   };
 
-  protected constructor(logLevel: LogLevel = 'info', logTag = defaultLogTag) {
+  protected constructor(logLevel: LogLevel = 'error', logTag = defaultLogTag) {
     this.logLevel = logLevel;
     this.logTag = logTag;
     this.shouldLog = this.shouldLog.bind(this);
@@ -28,6 +28,11 @@ export abstract class AbstractLogger {
     this.fatal = this.fatal.bind(this);
   }
 
+  /**
+   * Checks whether a log level should be logged based on the current log level.
+   * @param level The log level to check
+   * @returns Whether the log level should be logged
+   */
   protected shouldLog(level: LogLevel): boolean {
     return (
       AbstractLogger.logLevelPriority[level] <=
@@ -35,10 +40,21 @@ export abstract class AbstractLogger {
     );
   }
 
+  /**
+   * Formats a message for logging, including the log level and log tag.
+   * @param level The log level to use
+   * @param args The arguments to log
+   * @returns The formatted message
+   */
   protected formatMessage(level: LogLevel, ...args: unknown[]): string {
     return `${new Date().toISOString()} [${this.logTag}] ${level.toUpperCase()} - ${JSON.stringify(args)}`;
   }
 
+  /**
+   * Extends the current logger with a new log tag.
+   * @param logTag The new log tag to use
+   * @returns A new logger instance with the new log tag
+   */
   public extend(logTag: string): AbstractLogger {
     const constructor = this.constructor as new (
       logLevel: LogLevel,

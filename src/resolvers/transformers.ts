@@ -1,5 +1,5 @@
 import { LibraryParsingError } from '../classes/errors';
-import {
+import type {
   ClientGameLabsActionsResponse,
   ClientGameLabsEntityEventsResponse,
   ClientGameLabsEntityVehiclesResponse,

@@ -6,23 +6,58 @@ import { AbstractLogger } from '../types/logger';
 import { MissingServerApiIdError, LoginRequiredError, ExpiredTokenError } from './errors';
 
 export class Authentication implements AuthenticationData, ClientAuthenticationData {
+  /**
+   * The CFTools client instance, used for making (authentication) requests.
+   */
   private client: CFToolsClient;
+  /**
+   * The logger instance, used for logging messages - by default an extension of the
+   * logger attached to the primary {@link CFToolsClient} instance.
+   */
   private logger: AbstractLogger;
 
+  /** The date and time the authentication token was issued. */
   public issuedAt: Date | null = null;
+  /** The date and time the authentication token expires. */
   public expiresAt: Date | null = null;
 
+  /** The user agent to use for making requests. */
   public userAgent: string;
+  /**
+   * The application ID to use for authenticating with the CFTools API,
+   * obtained {@link https://developer.cftools.cloud/applications here}.
+   */
   public applicationId: string;
+  /**
+   * The application secret to use for authenticating with the CFTools API,
+   * obtained {@link https://developer.cftools.cloud/applications here}.
+   * This should be kept secret and not shared.
+   */
   public applicationSecret: string;
+  /** The default server API ID to use for actions, can be overridden in requests. */
   public serverApiId?: string;
+  /**
+   * The enterprise token to use for authenticating with the CFTools
+   * API, privately obtained from the CFTools team.
+   */
   public enterpriseToken?: string;
   
+  /** Whether the authentication token is currently refreshing. */
   private currentlyRefreshing = false;
+  /** Whether the client is currently authenticated. */
   public authenticated = false;
+  /** The authentication token to use for making requests. */
   public authenticationToken: string | null = null;
+  /** The timeout for refreshing the authentication token. */
   public refreshTimeout: NodeJS.Timeout | null = null;
 
+  /**
+   * Creates a new authentication instance to authenticate
+   * against the CFTools (Data) API.
+   * @param client The CFTools client instance.
+   * @param clientAuth The client authentication data.
+   * @param logger The logger instance.
+   */
   constructor(client: CFToolsClient, clientAuth: ClientAuthenticationData, logger: AbstractLogger) {
     this.client = client;
     this.logger = logger;

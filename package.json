@@ -1,5 +1,5 @@
 {
-  "name": "cftools",
+  "name": "cftools.js",
   "version": "0.0.1",
   "description": "JavaScript implementation for the CFTools Data API.",
   "access": "public",
@@ -22,6 +22,7 @@
     "lint:fix": "npx eslint src/**/*.ts --fix && npx eslint test/**/*.ts --fix",
     "prebuild": "npm run clean:dist",
     "build": "tsup",
+    "build:docs": "typedoc --out docs src",
     "start": "node dist/index",
     "start:dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "pretest": "npm run build",
@@ -47,6 +48,7 @@
     "ts-node-dev": "^2.0.0",
     "tsup": "^8.3.5",
     "type-fest": "^4.26.1",
+    "typedoc": "^0.26.11",
     "typescript": "^5.6.3"
   },
   "repository": {

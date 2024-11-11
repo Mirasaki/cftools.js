@@ -81,7 +81,7 @@ import type {
   LBMutePlayerOptions,
 } from '../types/responses';
 
-import { AnyPlayerId, isCFToolsId } from '../resolvers/player-ids';
+import { AnyPlayerId, isCFToolsId, isSteam64 } from '../resolvers/player-ids';
 import { resolveServerId, ResolveServerIdOptions } from '../resolvers/server-id';
 import {
   transformBanListResponse,
@@ -98,6 +98,7 @@ import {
   transformServerStatisticsResponse,
   transformWhitelistResponse,
 } from '../resolvers/transformers';
+import { isNotFoundError } from './type-guards';
 
 /**
  * CacheConfigurationEntry is a tuple that represents the cache configuration
@@ -135,20 +136,20 @@ export type CacheConfiguration = {
  * is the maximum number of items to store.
  */
 export const defaultCacheConfiguration: CacheConfiguration = {
-  appGrants: [100, 60],
-  gameServerDetails: [100, 5],
-  userLookup: [100, 60],
-  listBans: [100, 30],
-  serverInfo: [100, 30],
-  serverStatistics: [100, 30],
-  playerList: [100, 30],
-  gameLabsActions: [100, 60],
-  gameLabsEntityEvents: [100, 60],
-  gameLabsEntityVehicles: [100, 60],
-  priorityQueue: [100, 30],
-  whitelist: [100, 30],
-  leaderboard: [100, 60],
-  playerStats: [100, 60],
+  appGrants: [60, 1],
+  gameServerDetails: [30, 100],
+  userLookup: [3600, 500],
+  listBans: [60, 100],
+  serverInfo: [60, 100],
+  serverStatistics: [60, 100],
+  playerList: [30, 100],
+  gameLabsActions: [60, 5],
+  gameLabsEntityEvents: [60, 5],
+  gameLabsEntityVehicles: [60, 5],
+  priorityQueue: [60, 250],
+  whitelist: [60, 100],
+  leaderboard: [60, 5],
+  playerStats: [60, 250],
 };
 
 /**
@@ -177,7 +178,7 @@ export const cachePrefixes: CachePrefix[] = Object.keys(defaultCacheConfiguratio
  */
 export type ClientOptions = {
   /**
-   * The logger to use for the client. If not provided, a new console logger
+   * The logger to use for the client. If not provided, a new  logger
    * will be created and used that only logs entries of level ERROR and higher.
    */
   logger?: AbstractLogger;
@@ -193,6 +194,13 @@ export type ClientOptions = {
    * timed out, and aborted.
    */
   requestTimeout?: number;
+  /**
+   * Should the Account Creation API be used? Explicit permission needs to be 
+   * obtained from the CFTools team to use this API. When enabled, the client
+   * will create user accounts for identities that have never connected to
+   * cftools-enabled servers.
+   */
+  useAccountCreationAPI?: boolean;
 };
 
 /**
@@ -227,6 +235,11 @@ export class CFToolsClient {
    * Whether caching is enabled for the client.
    */
   public cachingEnabled = true;
+  /**
+   * Whether the account creation API is enabled for the client.
+   * @see {@link ClientOptions.useAccountCreationAPI}
+   */
+  public useAccountCreationAPI = false;
 
   constructor(
     /**
@@ -253,6 +266,7 @@ export class CFToolsClient {
     this.cachingEnabled = cacheConfiguration?.enabled ?? true;
     delete cacheConfiguration?.enabled;
     this.cacheConfiguration = { ...defaultCacheConfiguration, ...cacheConfiguration };
+    this.useAccountCreationAPI = options?.useAccountCreationAPI ?? false;
   }
 
   private cacheTTL(prefix: CachePrefix): number {
@@ -439,7 +453,14 @@ export class CFToolsClient {
    * @returns The resolved CFTools ID.
    * @see {`/v1/users/lookup`} for more information.
    */
-  public async lookupUser(id: string | AnyPlayerId): Promise<ClientLookupUserResponse> {
+  public async lookupUser(
+    id: string | AnyPlayerId,
+    /**
+     * Whether the Account Creation API should be used.
+     * @see {@link ClientOptions.useAccountCreationAPI}
+     */
+    useAccountCreationAPI = this.useAccountCreationAPI,
+  ): Promise<ClientLookupUserResponse> {
     const cachePrefix = 'userLookup';
     const cacheKey = CacheManager.hashKeyFromObject(id);
     const cachedResponse = await this.cacheGet<ClientLookupUserResponse>(cachePrefix, cacheKey);
@@ -450,6 +471,7 @@ export class CFToolsClient {
     }
 
     const resolvedId = typeof id === 'string' ? id : id.getRawId();
+    const usesAccountCreationAPI = useAccountCreationAPI && isSteam64(resolvedId);
 
     if (isCFToolsId(resolvedId)) {
       return {
@@ -457,14 +479,30 @@ export class CFToolsClient {
       };
     }
 
-    const response = await this.requestClient.get<LookupUserResponse>(
-      this.requestClient.apiUrl(API_VERSION.V1, '/users/lookup', {
-        identifier: resolvedId,
-      }),
-    );
+    let response;
+    try {
+      response = await this.requestClient.get<LookupUserResponse>(
+        this.requestClient.apiUrl(API_VERSION.V1, '/users/lookup', {
+          identifier: resolvedId,
+        }),
+      );
+    } catch (error) {
+      if (isNotFoundError(error) && usesAccountCreationAPI) {
+        response = await this.requestClient.get<LookupUserResponse>(
+          this.requestClient.apiUrl(API_VERSION.V1, '/users/lookup', {
+            identifier: resolvedId,
+            create: 'true',
+          }),
+        );
+      }
+      else {
+        throw error;
+      }
+    }
 
     const transformedResponse: ClientLookupUserResponse = {
       cftoolsId: response.cftools_id,
+      notice: response.notice,
     };
 
     this.cacheSet(cachePrefix, cacheKey, transformedResponse);

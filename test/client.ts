@@ -14,12 +14,15 @@ export const getClient = (logLevel: LogLevel, requestTimeout = 1500) => {
   }
 
   const logger = new ConsoleLogger(logLevel);
-
-  return new CFToolsClient({
+  const client = new CFToolsClient({
     applicationId: process.env.CFTOOLS_APPLICATION_ID,
     applicationSecret: process.env.CFTOOLS_APPLICATION_SECRET,
     enterpriseToken: process.env.CFTOOLS_ENTERPRISE_TOKEN,
     serverApiId: process.env.CFTOOLS_SERVER_API_ID,
     userAgent: 'CFTools API Client / Test Suite',
-  }, { logger, requestTimeout });
+  }, { logger, requestTimeout, cacheConfiguration: {
+    
+  } });
+
+  return client;
 };

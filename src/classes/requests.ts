@@ -37,6 +37,12 @@ import {
 } from './errors';
 
 export class RequestClient extends AbstractRequestClient implements AbstractRequestClient {
+  /**
+   * Creates a new request client to interact with the CFTools API
+   * @param authProvider The authentication provider to use for requests
+   * @param logger The logger to use for logging messages
+   * @param timeout The timeout for requests in milliseconds
+   */
   constructor(
     private authProvider: Authentication,
     private logger: AbstractLogger,
@@ -53,6 +59,13 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
     this.delete = this.delete.bind(this);
   }
 
+  /**
+   * Dynamically resolves an URL based on the version, path/endpoint, and parameters
+   * @param version The {@link API_VERSION} to use
+   * @param path The path/endpoint to request
+   * @param params The parameters (`URLSearchParams`) to include in the request
+   * @returns The resolved URL
+   */
   public apiUrl(version: API_VERSION, path: string, params?: Record<string, string> | URLSearchParams): string {
     const baseUrl = this.authProvider.enterpriseToken
       ? version === API_VERSION.V1 ? ENTERPRISE_V1_API_BASE_URL : ENTERPRISE_V2_API_BASE_URL
@@ -67,6 +80,12 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
     return resolvedUrl;
   }
 
+  /**
+   * Resolves the headers for a request based on the current state of the client
+   * @param headersInit Initial headers for the request
+   * @param isAuthenticating Whether the request is for authentication or not
+   * @returns The resolved headers for the request
+   */
   public resolveHeaders(
     headersInit: HeadersInit,
     isAuthenticating = false,
@@ -126,28 +145,28 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
    * @param options The options for the request
    * @param isAuthenticating Whether the request is for authentication or not
    * @returns The parsed JSON response from the request
-   * @throw {HTTPRequestError} Thrown if the request fails
-   * @throw {InvalidMethodError} Thrown if the request method is invalid
-   * @throw {ParameterRequiredError} Thrown if a required parameter is missing
-   * @throw {FailedTypeValidationError} Thrown if a supplied argument failed type validation
-   * @throw {InvalidOptionError} Thrown if a supplied option is not available for the selected route
-   * @throw {MaxLengthExceededError} Thrown if the maximum length of a parameter has been exceeded
-   * @throw {MinLengthNotReachedError} Thrown if the minimum length of a parameter has not been reached
-   * @throw {LengthMismatchError} Thrown if the length of a parameter does not match the expected length
-   * @throw {DuplicateEntryError} Thrown if a duplicate entry is detected
-   * @throw {LoginRequiredError} Thrown if the client is not authenticated
-   * @throw {TokenRegenerationRequiredError} Thrown if the authentication token needs to be regenerated
-   * @throw {BadSecretError} Thrown if the secret is invalid
-   * @throw {BadTokenError} Thrown if the token is invalid
-   * @throw {ExpiredTokenError} Thrown if the token has expired
-   * @throw {NoGrantError} Thrown if the token has no grant
-   * @throw {NotFoundError} Thrown if the requested resource was not found
-   * @throw {InvalidResourceError} Thrown if the requested resource is invalid
-   * @throw {InvalidBucketError} Thrown if the requested bucket is invalid
-   * @throw {RateLimitError} Thrown if the rate limit has been exceeded
-   * @throw {UnexpectedError} Thrown if an unexpected error occurred
-   * @throw {TimeoutError} Thrown if the request timed out
-   * @throw {SystemUnavailableError} Thrown if the system is unavailable
+   * @throws {HTTPRequestError} Thrown if the request fails
+   * @throws {InvalidMethodError} Thrown if the request method is invalid
+   * @throws {ParameterRequiredError} Thrown if a required parameter is missing
+   * @throws {FailedTypeValidationError} Thrown if a supplied argument failed type validation
+   * @throws {InvalidOptionError} Thrown if a supplied option is not available for the selected route
+   * @throws {MaxLengthExceededError} Thrown if the maximum length of a parameter has been exceeded
+   * @throws {MinLengthNotReachedError} Thrown if the minimum length of a parameter has not been reached
+   * @throws {LengthMismatchError} Thrown if the length of a parameter does not match the expected length
+   * @throws {DuplicateEntryError} Thrown if a duplicate entry is detected
+   * @throws {LoginRequiredError} Thrown if the client is not authenticated
+   * @throws {TokenRegenerationRequiredError} Thrown if the authentication token needs to be regenerated
+   * @throws {BadSecretError} Thrown if the secret is invalid
+   * @throws {BadTokenError} Thrown if the token is invalid
+   * @throws {ExpiredTokenError} Thrown if the token has expired
+   * @throws {NoGrantError} Thrown if the token has no grant
+   * @throws {NotFoundError} Thrown if the requested resource was not found
+   * @throws {InvalidResourceError} Thrown if the requested resource is invalid
+   * @throws {InvalidBucketError} Thrown if the requested bucket is invalid
+   * @throws {RateLimitError} Thrown if the rate limit has been exceeded
+   * @throws {UnexpectedError} Thrown if an unexpected error occurred
+   * @throws {TimeoutError} Thrown if the request timed out
+   * @throws {SystemUnavailableError} Thrown if the system is unavailable
    */
   public async request<T>(
     url: string,
@@ -201,22 +220,79 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
     return json;
   }
 
+  /**
+   * Perform a GET request to the CFTools API
+   * @param url The URL to request
+   * @param isAuthenticating Whether the request is for authentication or not
+   * @returns The parsed (JSON) response from the request
+   * @see {@link request}
+   */
   public async get<T>(url: string, isAuthenticating = false): Promise<T> {
     return this.request(url, { method: 'GET' }, isAuthenticating);
   }
 
+  /**
+   * Perform a POST request to the CFTools API
+   * @param url The URL to request
+   * @param body The body of the request
+   * @param isAuthenticating Whether the request is for authentication or not
+   * @returns The parsed (JSON) response from the request
+   * @see {@link request}
+   */
   public async post<T>(url: string, body: Record<string, unknown>, isAuthenticating = false): Promise<T> {
     return this.request(url, { method: 'POST', body: JSON.stringify(body) }, isAuthenticating);
   }
 
+  /**
+   * Perform a PUT request to the CFTools API
+   * @param url The URL to request
+   * @param body The body of the request
+   * @param isAuthenticating Whether the request is for authentication or not
+   * @returns The parsed (JSON) response from the request
+   * @see {@link request}
+   */
   public async put<T>(url: string, body: Record<string, unknown>, isAuthenticating = false): Promise<T> {
     return this.request(url, { method: 'PUT', body: JSON.stringify(body) }, isAuthenticating);
   }
 
+  /**
+   * Perform a DELETE request to the CFTools API
+   * @param url The URL to request
+   * @param isAuthenticating Whether the request is for authentication or not
+   * @returns The parsed (JSON) response from the request
+   * @see {@link request}
+   */
   public async delete<T>(url: string, isAuthenticating = false): Promise<T> {
     return this.request(url, { method: 'DELETE' }, isAuthenticating);
   }
 
+  /**
+   * Wraps request errors in a more user-friendly error
+   * @param request The request that failed
+   * @param response The response from the failed request
+   * @throws {HTTPRequestError} Thrown if the request fails
+   * @throws {InvalidMethodError} Thrown if the request method is invalid
+   * @throws {ParameterRequiredError} Thrown if a required parameter is missing
+   * @throws {FailedTypeValidationError} Thrown if a supplied argument failed type validation
+   * @throws {InvalidOptionError} Thrown if a supplied option is not available for the selected route
+   * @throws {MaxLengthExceededError} Thrown if the maximum length of a parameter has been exceeded
+   * @throws {MinLengthNotReachedError} Thrown if the minimum length of a parameter has not been reached
+   * @throws {LengthMismatchError} Thrown if the length of a parameter does not match the expected length
+   * @throws {DuplicateEntryError} Thrown if a duplicate entry is detected
+   * @throws {LoginRequiredError} Thrown if the client is not authenticated
+   * @throws {TokenRegenerationRequiredError} Thrown if the authentication token needs to be regenerated
+   * @throws {BadSecretError} Thrown if the secret is invalid
+   * @throws {BadTokenError} Thrown if the token is invalid
+   * @throws {ExpiredTokenError} Thrown if the token has expired
+   * @throws {NoGrantError} Thrown if the token has no grant
+   * @throws {NotFoundError} Thrown if the requested resource was not found
+   * @throws {InvalidResourceError} Thrown if the requested resource is invalid
+   * @throws {InvalidBucketError} Thrown if the requested bucket is invalid
+   * @throws {RateLimitError} Thrown if the rate limit has been exceeded
+   * @throws {UnexpectedError} Thrown if an unexpected error occurred
+   * @throws {TimeoutError} Thrown if the request timed out
+   * @throws {SystemUnavailableError} Thrown if the system is unavailable
+   */
   private async errorHandler(request: {
     url: string;
     method: string;
@@ -297,7 +373,7 @@ export class RequestClient extends AbstractRequestClient implements AbstractRequ
       case 'invalid-bucket':
         throw new InvalidBucketError(errorBody);
       }
-      break;
+      throw new NotFoundError(errorBody);
     }
     case 429: {
       throw new RateLimitError(errorBody);
