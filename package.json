@@ -1,6 +1,6 @@
 {
   "name": "cftools.js",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "JavaScript implementation for the CFTools Data API.",
   "access": "public",
   "main": "dist/index.js",
