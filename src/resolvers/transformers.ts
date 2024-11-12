@@ -32,15 +32,15 @@ import type {
 
 export const transformGrantResponse = (response: GrantsResponse): ClientGrantsResponse => {
   return {
-    banlist: response.tokens.banlist.map((token) => ({
+    banlist: response.tokens.banlist?.map((token) => ({
       createdAt: new Date(token.created_at),
       resource: {
         id: token.resource.id,
         identifier: token.resource.identifier,
         objectId: token.resource.object_id,
       },
-    })),
-    server: response.tokens.server.map((token) => ({
+    })) ?? [],
+    server: response.tokens.server?.map((token) => ({
       createdAt: new Date(token.created_at),
       resource: {
         id: token.resource.id,
@@ -48,7 +48,7 @@ export const transformGrantResponse = (response: GrantsResponse): ClientGrantsRe
         objectId: token.resource.object_id,
         gameserverId: token.resource.gameserver_id,
       },
-    })),
+    })) ?? [],
   };
 };
 
@@ -78,15 +78,15 @@ export const transformGameServerDetails = (
       os: responseData.host.os,
       queryPort: responseData.host.query_port,
     },
-    mods: responseData.mods.map((mod) => ({
+    mods: responseData.mods?.map((mod) => ({
       fileId: mod.file_id,
       name: mod.name,
-    })),
+    })) ?? [],
   };
 };
 
 export const transformBanListResponse = (response: ListBansResponse): ClientListBansResponse => {
-  return response.entries.map((ban) => ({
+  return response.entries?.map((ban) => ({
     id: ban.id,
     reason: ban.reason,
     expiresAt: ban.expires_at ? new Date(ban.expires_at) : null,
@@ -95,7 +95,7 @@ export const transformBanListResponse = (response: ListBansResponse): ClientList
     status: ban.status,
     identifier: ban.identifier,
     links: ban.links,
-  }));
+  })) ?? [];
 };
 
 export const transformServerInfoResponse = (response: ServerInfoResponse): ClientServerInfoResponse => {
@@ -184,7 +184,7 @@ export const transformServerStatisticsResponse = (
 };
 
 export const transformPlayerListResponse = (response: PlayerListResponse): ClientPlayerListResponse => {
-  return response.sessions.map((session) => ({
+  return response.sessions?.map((session) => ({
     id: session.id,
     cftoolsId: session.cftools_id,
     connection: {
@@ -258,7 +258,7 @@ export const transformPlayerListResponse = (response: PlayerListResponse): Clien
       longestShot: session.stats.longest_shot,
       suicides: session.stats.suicides,
     },
-  }));
+  })) ?? [];
 };
 
 export const transformGameLabsActionsResponse = (response: GameLabsActionsResponse): ClientGameLabsActionsResponse => {
@@ -278,7 +278,7 @@ export const transformGameLabsEntityVehiclesResponse = (
 };
 
 export const transformPriorityQueueResponse = (response: PriorityQueueResponse): ClientPriorityQueueResponse => {
-  return response.entries.map((entry) => ({
+  return response.entries?.map((entry) => ({
     createdAt: new Date(entry.created_at),
     creator: {
       cftoolsId: entry.creator.cftools_id,
@@ -294,11 +294,11 @@ export const transformPriorityQueueResponse = (response: PriorityQueueResponse):
       cftoolsId: entry.user.cftools_id,
     },
     uuid: entry.uuid,
-  }));
+  })) ?? [];
 };
 
 export const transformWhitelistResponse = (response: WhitelistResponse): ClientWhitelistResponse => {
-  return response.entries.map((entry) => ({
+  return response.entries?.map((entry) => ({
     createdAt: new Date(entry.created_at),
     creator: {
       cftoolsId: entry.creator.cftools_id,
@@ -314,11 +314,11 @@ export const transformWhitelistResponse = (response: WhitelistResponse): ClientW
       cftoolsId: entry.user.cftools_id,
     },
     uuid: entry.uuid,
-  }));
+  })) ?? [];
 };
 
 export const transformLeaderboardResponse = (response: LeaderboardResponse): ClientLeaderboardResponse => {
-  return response.leaderboard.map((entry) => ({
+  return response.leaderboard?.map((entry) => ({
     cftoolsId: entry.cftools_id,
     deaths: entry.deaths,
     environmentDeaths: entry.environment_deaths,
@@ -331,7 +331,7 @@ export const transformLeaderboardResponse = (response: LeaderboardResponse): Cli
     playtime: entry.playtime,
     rank: entry.rank,
     suicides: entry.suicides,
-  }));
+  })) ?? [];
 };
 
 export const transformPlayerStatsResponse = (
