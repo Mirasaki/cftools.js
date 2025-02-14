@@ -110,7 +110,9 @@ export const transformServerInfoResponse = (response: ServerInfoResponse): Clien
     connection: {
       peerVersion: response.server.connection.peer_version,
       prefilledCommands: response.server.connection.prefilled_commands,
-      protocolUsed: response.server.connection.protcol_used,
+      protocolUsed: response.server.connection.protcol_used
+        // @ts-expect-error - Typo in response, waiting for CFTools to update
+        ?? response.server.connection.protocol_used,
       restricted: response.server.connection.restricted,
     },
     gameserver: {

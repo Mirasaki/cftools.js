@@ -518,7 +518,6 @@ export class CFToolsClient {
    * it will be resolved to a CFTools ID before being used in the request.
    * @param options The options to list bans with.
    * @returns The list of bans.
-   * @throws {NotFoundError} Thrown if the player session is not found.
    * @see {`/v1/banlist/{banlist_id}/bans`} for more information.
    */
   public async listBans(options: ListBansOptions): Promise<ClientListBansResponse> {
@@ -583,7 +582,7 @@ export class CFToolsClient {
   /**
    * Deletes a ban from a banlist.
    * @param options The options to delete a ban with.
-   * @throws {NotFoundError} Thrown if the ban is not found.
+   * @throws {NotFoundError} Thrown if the ban being deleted does not exist.
    * @throws {InvalidOptionError} Thrown if the ban ID is not provided.
    * @see {`/v1/banlist/{banlist_id}/bans`} for more information.
    */
@@ -725,7 +724,7 @@ export class CFToolsClient {
    * is a dynamic player ID, it will be resolved to a CFTools ID before being used
    * in the request.
    * @param options The options to kick a player with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player being kicked is not found.
    * @throws {MaxLengthExceededError} Thrown if the kick reason exceeds 128 characters.
    * @see {`/v1/server/{server_id}/kick`} for more information.
    */
@@ -762,7 +761,7 @@ export class CFToolsClient {
    * parameter is a dynamic player ID, it will be resolved to a CFTools ID before being
    * used in the request.
    * @param options The options to message a player with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player being messaged is not found.
    * @throws {MaxLengthExceededError} Thrown if the private message content exceeds 256 characters.
    * @see {`/v1/server/{server_id}/message-private`} for more information.
    */
@@ -940,7 +939,7 @@ export class CFToolsClient {
    * installed on the server for these actions to work. This counts for any
    * GameLabs action, including teleporting players, spawning items, and more.
    * @param options The options to post a GameLabs action with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player on which the action is performed is not online.
    * @see {`/v1/server/{server_id}/GameLabs/action`} for more information.
    */
   public async postGameLabsAction(options: PostGameLabsActionOptions): Promise<void> {
@@ -1002,7 +1001,7 @@ export class CFToolsClient {
    * The mod {@link https://steamcommunity.com/sharedfiles/filedetails/?id=2464526692 GameLabs}
    * is required to be installed on the server for this action to work.
    * @param options The options to teleport a player with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player being teleported is not online.
    * @see {@link postGameLabsAction} for more information.
    */
   public async teleportPlayer(options: TeleportPlayerOptions): Promise<void> {
@@ -1041,7 +1040,7 @@ export class CFToolsClient {
    * The mod {@link https://steamcommunity.com/sharedfiles/filedetails/?id=2464526692 GameLabs}
    * is required to be installed on the server for this action to work.
    * @param options The options to heal a player with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player being healed is not online.
    * @see {@link postGameLabsAction} for more information.
    */
   public async healPlayer(options: TargetActionOptionsNoParams): Promise<void> {
@@ -1072,7 +1071,7 @@ export class CFToolsClient {
    * The mod {@link https://steamcommunity.com/sharedfiles/filedetails/?id=2464526692 GameLabs}
    * is required to be installed on the server for this action to work.
    * @param options The options to kill a player with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player being killed is not online.
    * @see {@link postGameLabsAction} for more information.
    */
   public async killPlayer(options: TargetActionOptionsNoParams): Promise<void> {
@@ -1108,7 +1107,7 @@ export class CFToolsClient {
    * The mod {@link https://steamcommunity.com/sharedfiles/filedetails/?id=2464526692 GameLabs}
    * is required to be installed on the server for this action to work.
    * @param options The options to spawn an item on a player with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player on which the item is spawned is not online.
    * @see {@link postGameLabsAction} for more information.
    */
   public async spawnItemOnPlayer(options: SpawnItemOnPlayerOptions): Promise<void> {
@@ -1157,7 +1156,7 @@ export class CFToolsClient {
    * The mod {@link https://steamcommunity.com/sharedfiles/filedetails/?id=2464526692 GameLabs}
    * is required to be installed on the server for this action to work.
    * @param options The options to strip a player with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player being stripped is not online.
    * @see {@link postGameLabsAction} for more information.
    */
   public async stripPlayer(options: TargetActionOptionsNoParams): Promise<void> {
@@ -1188,7 +1187,7 @@ export class CFToolsClient {
    * The mod {@link https://steamcommunity.com/sharedfiles/filedetails/?id=2464526692 GameLabs}
    * is required to be installed on the server for this action to work.
    * @param options The options to explode a player with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player being exploded is not online.
    * @see {@link postGameLabsAction} for more information.
    */
   public async explodePlayer(options: TargetActionOptionsNoParams): Promise<void> {
@@ -1706,7 +1705,7 @@ export class CFToolsClient {
    * The mod {@link https://lbmaster.de/product.php?id=4 Advanced Groups}
    * is required to be installed on the server for this action to work.
    * @param options The options to mute a player with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player who is being muted is not online.
    * @see {@link postGameLabsAction} for more information.
    * @see {@link lbUnmutePlayer} for more information on unmuting a player.
    */
@@ -1747,7 +1746,7 @@ export class CFToolsClient {
    * The mod {@link https://lbmaster.de/product.php?id=4 Advanced Groups}
    * is required to be installed on the server for this action to work.
    * @param options The options to unmute a player with.
-   * @throws {NotFoundError} Thrown if the player session is not found.
+   * @throws {NotFoundError} Thrown if the player who is being unmuted is not online.
    * @see {@link postGameLabsAction} for more information.
    * @see {@link lbMutePlayer} for more information on muting a player.
    */
@@ -1779,7 +1778,7 @@ export class CFToolsClient {
    * The `comment` parameter is an optional comment to filter the priority queue list with.
    * @param options The options to get the priority queue with.
    * @returns The priority queue list/bucket for the player.
-   * @throws {DuplicateEntryError} Thrown if the player is already in the priority queue.
+   * @throws {NotFoundError} Thrown if the player is not found in the priority queue bucket/list.
    * @see {@link postPriorityQueue} for more information on posting to the priority queue.
    * @see {@link deletePriorityQueue} for more information on deleting from the priority queue.
    * @see {`/server/{serverApiId}/queuepriority`} for more information on the CFTools API endpoint.
@@ -1809,6 +1808,10 @@ export class CFToolsClient {
     const response = await this.requestClient.get<PriorityQueueResponse>(
       this.requestClient.apiUrl(API_VERSION.V1, `/server/${options.serverApiId}/queuepriority`, resolvedOptions),
     );
+
+    if (response.entries.length === 0) {
+      throw new NotFoundError(null, 'Player not found in priority queue');
+    }
 
     const transformedResponse = transformPriorityQueueResponse(response);
 
