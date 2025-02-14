@@ -1840,12 +1840,19 @@ export class CFToolsClient {
   public async postPriorityQueue(options: PostPriorityQueueOptions): Promise<void> {
     const resolvedPlayerId = await this.resolveDynamicPlayerId(options);
 
-    const currentPriorityQueue = await this.getPriorityQueue({
-      serverApiId: options.serverApiId,
-      playerId: resolvedPlayerId,
-    });
+    let currentPriorityQueue = null;
+    try {
+      currentPriorityQueue = await this.getPriorityQueue({
+        serverApiId: options.serverApiId,
+        playerId: resolvedPlayerId,
+      });
+    } catch (error) {
+      if (!(error instanceof NotFoundError)) {
+        throw error;
+      }
+    }
 
-    if (currentPriorityQueue.length > 0) {
+    if (currentPriorityQueue && currentPriorityQueue.length > 0) {
       throw new DuplicateEntryError(null, 'Player is already in the priority queue');
     }
     
