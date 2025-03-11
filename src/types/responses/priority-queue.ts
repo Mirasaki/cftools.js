@@ -47,12 +47,16 @@ export type PriorityQueueResponse = BaseResponse & {
   entries: PriorityQueueEntry[];
 };
 
-export type ClientPriorityQueueResponse = ClientBaseResponse<
-  CamelCasedPropertiesDeep<Omit<PriorityQueueEntry, 'created_at' | 'updated_at' | 'meta'> & {
+export type ClientPriorityQueueEntry = CamelCasedPropertiesDeep<
+  Omit<PriorityQueueEntry, 'created_at' | 'updated_at' | 'meta'> & {
     createdAt: Date;
     updatedAt: Date;
     meta: Omit<PriorityQueueEntry['meta'], 'expiration'> & {
       expiration: Date | null;
     };
-  }>[]
+  }
+>;
+
+export type ClientPriorityQueueResponse = ClientBaseResponse<
+  ClientPriorityQueueEntry[]
 >;
