@@ -80,7 +80,7 @@ export type PlayerSessionPersona = {
     game: number;
     last_ban: number;
     vac: number;
-  };
+  } | null;
   profile: {
     avatar: string;
     name: string;

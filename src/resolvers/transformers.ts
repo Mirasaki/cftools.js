@@ -244,11 +244,11 @@ export const transformPlayerListResponse = (response: PlayerListResponse): Clien
     },
     persona: {
       bans: {
-        community: session.persona.bans.community,
-        economy: session.persona.bans.economy,
-        game: session.persona.bans.game,
-        lastBan: session.persona.bans.last_ban,
-        vac: session.persona.bans.vac,
+        community: session.persona.bans?.community ?? false,
+        economy: session.persona.bans?.economy ?? '',
+        game: session.persona.bans?.game ?? 0,
+        lastBan: session.persona.bans?.last_ban ?? 0,
+        vac: session.persona.bans?.vac ?? 0
       },
       profile: session.persona.profile,
     },
