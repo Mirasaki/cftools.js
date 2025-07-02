@@ -49,7 +49,7 @@ jobs:
         anonymous-telemetry: 1
     - name: SSH into Server and Prepare Environment
       run: |
-        tsh ssh mirasaki-development@md01.na01.mirasaki.dev << 'ENDSSH'
+        tsh ssh mirasaki-development@md01.na1.mirasaki.dev << 'ENDSSH'
           cd /var/www/cftools.js
           echo "Stashing any local changes..."
           git stash
