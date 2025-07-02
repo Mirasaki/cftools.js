@@ -1,6 +1,6 @@
 {
   "name": "@mirasaki/cftools.js",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "JavaScript implementation for the CFTools Data API.",
   "publishConfig": {
     "access": "public"
@@ -24,7 +24,6 @@
     "start": "node dist/index",
     "start:dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "pretest": "npm run build",
-    "publish": "npm publish --access=public",
     "prepublishOnly": "npm run build && npm run build:docs",
     "test": "ts-mocha test/**/*.spec.ts",
     "test:dev": "ts-mocha test/**/*.spec.ts -w --watch-files '**/*.ts'",
@@ -53,7 +52,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Mirasaki-Development/cftools.js"
+    "url": "git+https://github.com/Mirasaki-Development/cftools.js.git"
   },
   "keywords": [
     "cftools",
