@@ -1,8 +1,10 @@
 {
-  "name": "cftools.js",
-  "version": "1.0.8",
+  "name": "@mirasaki/cftools.js",
+  "version": "1.0.10",
   "description": "JavaScript implementation for the CFTools Data API.",
-  "access": "public",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -22,6 +24,8 @@
     "start": "node dist/index",
     "start:dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "pretest": "npm run build",
+    "publish": "npm publish --access=public",
+    "prepublishOnly": "npm run build && npm run build:docs",
     "test": "ts-mocha test/**/*.spec.ts",
     "test:dev": "ts-mocha test/**/*.spec.ts -w --watch-files '**/*.ts'",
     "typecheck": "tsc --noEmit"

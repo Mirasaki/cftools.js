@@ -3,8 +3,8 @@
 The `CFToolsClient` is the main entrypoint for this library. It provides convenience methods around the CFTools Data API which can be found [here](https://developer.cftools.cloud/documentation/data-api). This document serves as an introduction to the CFTools Data API and the implementation inside this package.
 
 ```js
-import { CFToolsClient } from 'cftools.js'; // ESM
-const { CFToolsClient } = require('cftools.js'); // CommonJS
+import { CFToolsClient } from '@mirasaki/cftools.js'; // ESM
+const { CFToolsClient } = require('@mirasaki/cftools.js'); // CommonJS
 
 // Instantiate our client, the `serverApiId` can be
 // omitted and overwritten in individual requests
@@ -22,7 +22,7 @@ For a complete overview of what the client can do, please check out the [API ref
 The following example wraps around updating a priority queue entry. This serves as an complete example on how this library and it's client are used, including error handling.
 
 ```js
-import { isNotFoundError, isMissingServerApiIdError, isDuplicateEntryError } from 'cftools.js';
+import { isNotFoundError, isMissingServerApiIdError, isDuplicateEntryError } from '@mirasaki/cftools.js';
 
 // Do something with the client
 const handlePriorityQueue = (
@@ -83,7 +83,7 @@ handlePriorityQueue('76500000000000000')
 To enable the usage of the Enterprise API - the CFTools Data API without any strict rate limits (except for the global Cloudflare limit of 6000 requests per minute) - you can simply provide the token that is privately obtained from the CFTools team in the Client constructor:
 
 ```js
-import { CFToolsClient } from 'cftools.js';
+import { CFToolsClient } from '@mirasaki/cftools.js';
 
 const client = new CFToolsClient({
   applicationId: process.env.CFTOOLS_APPLICATION_ID,
@@ -115,7 +115,7 @@ Please note, both the Enterprise API and explicitly provided permission from the
 The following example demonstrates how to modify the caching set-up for your client.
 
 ```js
-import { CFToolsClient } from 'cftools.js';
+import { CFToolsClient } from '@mirasaki/cftools.js';
 
 const client = new CFToolsClient({
   applicationId: process.env.CFTOOLS_APPLICATION_ID,
@@ -149,7 +149,7 @@ const client = new CFToolsClient({
 The following example demonstrates how to change the logging level for your client.
 
 ```js
-import { CFToolsClient, ConsoleLogger } from 'cftools.js';
+import { CFToolsClient, ConsoleLogger } from '@mirasaki/cftools.js';
 
 const logger = new ConsoleLogger(logLevel);
 const client = new CFToolsClient({
@@ -160,7 +160,7 @@ const client = new CFToolsClient({
 The following example demonstrates how to attach a custom logger to your instantiated client, allowing for details logs to be saved locally or otherwise. This example uses the `ConsoleLogger` implementation, but it's very easy so switch out for [`winston`](https://www.npmjs.com/package/winston) - as an example.
 
 ```js
-import { CFToolsClient, AbstractLogger } from 'cftools.js';
+import { CFToolsClient, AbstractLogger } from '@mirasaki/cftools.js';
 
 class ConsoleLogger extends AbstractLogger implements AbstractLogger {
   /**
