@@ -30,14 +30,14 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/chai": "^4.3.4",
+    "@types/chai": "^5.2.2",
     "@types/lodash": "^4.14.188",
     "@types/mocha": "^10.0.0",
     "@types/node": "^18.11.9",
     "@types/sinon": "^10.0.13",
     "@typescript-eslint/eslint-plugin": "^5.42.1",
     "@typescript-eslint/parser": "^5.42.1",
-    "chai": "^4.3.7",
+    "chai": "^5.2.0",
     "dotenv": "^16.4.5",
     "eslint": "^8.27.0",
     "mocha": "^10.1.0",
