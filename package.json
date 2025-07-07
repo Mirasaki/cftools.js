@@ -1,6 +1,6 @@
 {
   "name": "@mirasaki/cftools.js",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "JavaScript implementation for the CFTools Data API.",
   "publishConfig": {
     "access": "public",
