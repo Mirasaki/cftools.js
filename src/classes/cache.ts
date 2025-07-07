@@ -17,8 +17,9 @@ export class CacheManager {
   /** The set of keys in the cache, needed because keyv doesn't support listing keys. */
   private keysSet: Set<string> = new Set();
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  private constructor() {}
+  private constructor() {
+    void 0;
+  }
 
   /**
    * Hashes a key using SHA-256.
