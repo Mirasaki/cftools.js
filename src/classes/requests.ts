@@ -1,5 +1,3 @@
-/* eslint-disable max-len */
-
 import { Authentication } from './auth';
 import {
   API_VERSION,

@@ -13,10 +13,11 @@ import {
   LengthMismatchError,
   MaxLengthExceededError,
   MinLengthNotReachedError,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   MissingServerApiIdError,
   NotFoundError
 } from './errors';
+
+void typeof MissingServerApiIdError; // Keep in bundle for @throws
 
 import type { ClientAuthenticationData, ClientAuthentication } from '../types/auth';
 import { AbstractLogger } from '../types/logger';

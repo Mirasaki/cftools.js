@@ -243,8 +243,13 @@ export class InvalidResourceError extends HTTPRequestError {
  * not be executed as the respective bucket was not been found or was not configured
  */
 export class InvalidBucketError extends HTTPRequestError {
-  // eslint-disable-next-line max-len
-  constructor(body: APIBody, msg = 'The resource has been found, but the action could not be executed as the respective bucket was not been found or was not configured.') {
+  constructor(
+    body: APIBody,
+    msg = [
+      'The resource has been found, but the action could not be executed as the respective',
+      'bucket was not been found or was not configured.',
+    ].join(' '),
+  ) {
     super(404, msg, body);
     Object.setPrototypeOf(this, InvalidBucketError.prototype);
   }
@@ -265,8 +270,13 @@ export class RateLimitError extends HTTPRequestError {
  * contact CFTools Cloud support with the supplied "request_id"
  */
 export class UnexpectedError extends HTTPRequestError {
-  // eslint-disable-next-line max-len
-  constructor(body: APIBody, msg = 'An internal error occurred. Should this error persist, contact CFTools Cloud support with the supplied "request_id".') {
+  constructor(
+    body: APIBody,
+    msg = [
+      'An internal error occurred. Should this error persist, contact CFTools',
+      'Cloud support with the supplied "request_id".',
+    ].join(' '),
+  ) {
     super(500, msg, body);
     Object.setPrototypeOf(this, UnexpectedError.prototype);
   }
