@@ -22,7 +22,7 @@ jobs:
           embed-author-url: "https://mirasaki.dev"
           embed-author-icon-url: "https://mirasaki.dev/logo.png"
           embed-color: 14228765
-          embed-title: "⬇️ @mirasaki/cftools.js"
+          embed-title: "⬇️ @md-oss/cftools.js"
           embed-description: "⌛ Deploying **`@${{ github.repository }}`**...\n📤 Service is now temporarily unavailable."
 
   deploy:
@@ -77,5 +77,5 @@ jobs:
           embed-author-url: "https://mirasaki.dev"
           embed-author-icon-url: "https://mirasaki.dev/logo.png"
           embed-color: 9559538
-          embed-title: "⬆️ @mirasaki/cftools.js"
+          embed-title: "⬆️ @md-oss/cftools.js"
           embed-description: "✅ Finished deploying **`@${{ github.repository }}`**\n📥 [Service](https://cftools.mirasaki.dev) is back online"
