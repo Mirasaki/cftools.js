@@ -7,7 +7,7 @@
 ## Installation
 
 ```bash
-npm install @mirasaki/cftools.js --save
+npm install @md-oss/cftools.js --save
 ```
 
 ## Usage
@@ -15,8 +15,8 @@ npm install @mirasaki/cftools.js --save
 The main entrypoint for this package/library is the `CFToolsClient`. It provides convenience methods to interact with the API, and provides 100% coverage of the Data API.
 
 ```js
-import { CFToolsClient } from '@mirasaki/cftools.js'; // ESM
-const { CFToolsClient } = require('@mirasaki/cftools.js'); // CommonJS
+import { CFToolsClient } from '@md-oss/cftools.js'; // ESM
+const { CFToolsClient } = require('@md-oss/cftools.js'); // CommonJS
 
 // Instantiate our client, the `serverApiId` can be
 // omitted and overwritten in individual requests
