@@ -38,7 +38,7 @@ jobs:
     - name: Fetch Teleport binaries
       uses: teleport-actions/setup@v1
       with:
-        version: 16.4.0
+        version: 18.4.1
     - name: Fetch credentials using Machine ID
       id: auth
       uses: teleport-actions/auth@v2
