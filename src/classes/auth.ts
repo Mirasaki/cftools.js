@@ -21,7 +21,11 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
   /** The date and time the authentication token expires. */
   public expiresAt: Date | null = null;
 
-  /** The user agent to use for making requests. */
+  /**
+   * The user agent to use for making requests.
+   * 
+   * Note from the documentation: All requests must contain a User-Agent header containing your application id.
+   */
   public userAgent: string;
   /**
    * The application ID to use for authenticating with the CFTools API,
@@ -62,7 +66,7 @@ export class Authentication implements AuthenticationData, ClientAuthenticationD
     this.client = client;
     this.logger = logger;
 
-    this.userAgent = clientAuth.userAgent ?? userAgent;
+    this.userAgent = clientAuth.userAgent ?? userAgent(clientAuth.applicationId);
     this.applicationId = clientAuth.applicationId;
     this.applicationSecret = clientAuth.applicationSecret;
     this.serverApiId = clientAuth.serverApiId;

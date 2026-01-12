@@ -110,9 +110,9 @@ export const transformServerInfoResponse = (response: ServerInfoResponse): Clien
     connection: {
       peerVersion: response.server.connection.peer_version,
       prefilledCommands: response.server.connection.prefilled_commands,
-      protocolUsed: response.server.connection.protcol_used
-        // @ts-expect-error - Typo in response, waiting for CFTools to update
-        ?? response.server.connection.protocol_used,
+      protocolUsed: // @ts-expect-error - Typo in response, waiting for CFTools to update
+        response.server.connection.protocol_used
+          ?? response.server.connection.protcol_used,
       restricted: response.server.connection.restricted,
     },
     gameserver: {
@@ -197,9 +197,9 @@ export const transformPlayerListResponse = (response: PlayerListResponse): Clien
         es: session.connection.country_names.es,
         fr: session.connection.country_names.fr,
         ja: session.connection.country_names.ja,
-        ptBR: session.connection.country_names['pt-BR'],
         ru: session.connection.country_names.ru,
-        zhCN: session.connection.country_names['zh-CN'],
+        ptBr: session.connection.country_names['pt-BR'],
+        zhCn: session.connection.country_names['zh-CN'],
       },
       ipv4: session.connection.ipv4,
       malicious: session.connection.malicious,

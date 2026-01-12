@@ -1,32 +1,28 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages#example-workflow
-
-name: Node.js Package
+name: Publish Package
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [Release]
-    types:
-      - completed
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  id-token: write  # Required for OIDC
+  contents: read   # To checkout the code
 
 jobs:
-  publish-npm:
+  publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
-          registry-url: https://registry.npmjs.org/
-      - run: npm install
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm ci
       # NPM doesn't install devDependencies when a user downloads our package
       # but it sill counts them in the project dependency count.
       - run: npm pkg delete devDependencies
-      - run: npm run build
-      - run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+      - run: npm run build --if-present
+      - run: npm publish

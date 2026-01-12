@@ -139,3 +139,6 @@ dist
 
 # Build distribution directory
 dist/
+
+# local testing
+/test/local.js
