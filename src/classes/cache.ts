@@ -77,7 +77,7 @@ export class CacheManager {
   public async get<T>(key: string): Promise<T | null> {
     const value = await CacheManager.cache.get<string>(key);
 
-    if (value === null) {
+    if (typeof value === 'undefined') {
       return null;
     }
 
